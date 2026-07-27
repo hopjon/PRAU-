@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Field ID — Suspect Register</title>
+<style>
+  :root{
+    --bg:#101216;
+    --panel:#1a1d24;
+    --panel2:#20242d;
+    --line:#2b3038;
+    --text:#e8eaed;
+    --dim:#8b929e;
+    --amber:#f2b705;
+    --amber-dim:#8a6c0a;
+    --teal:#2dd4bf;
+    --red:#ef5350;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    height:100%;overflow-x:hidden;}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+
+  /* ---- gate screen ---- */
+  .gate{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:32px;gap:18px;}
+  .gate .badge{font-size:11px;letter-spacing:3px;color:var(--amber);text-transform:uppercase;font-weight:700;}
+  .gate h1{font-size:26px;margin:0;font-weight:800;letter-spacing:-0.5px;}
+  .gate p{color:var(--dim);font-size:14px;text-align:center;margin:0 0 8px;line-height:1.5;}
+  .gate input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    padding:14px 16px;border-radius:10px;font-size:16px;letter-spacing:2px;text-align:center;}
+  .gate button{width:100%;padding:14px;border:none;border-radius:10px;background:var(--amber);
+    color:#1a1400;font-weight:800;font-size:15px;cursor:pointer;}
+  .gate .err{color:var(--red);font-size:13px;min-height:16px;}
+
+  /* ---- header ---- */
+  header{position:sticky;top:0;z-index:10;background:rgba(16,18,22,0.96);backdrop-filter:blur(6px);
+    padding:14px 16px 10px;border-bottom:1px solid var(--line);}
+  header .row1{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;}
+  header h1{font-size:18px;margin:0;font-weight:800;letter-spacing:-0.3px;}
+  header .sub{font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
+  .iconbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-size:17px;cursor:pointer;}
+  .searchbar{display:flex;gap:8px;}
+  .searchbar input{flex:1;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    padding:11px 14px;border-radius:9px;font-size:15px;}
+  .searchbar input::placeholder{color:var(--dim);}
+
+  /* ---- list ---- */
+  main{flex:1;padding:14px 16px 100px;}
+  .empty{text-align:center;color:var(--dim);padding:60px 20px;font-size:14px;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;}
+  .card .thumb{width:100%;aspect-ratio:1;background:var(--panel2) center/cover no-repeat;
+    display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:28px;}
+  .card .info{padding:9px 11px 11px;}
+  .card .name{font-weight:700;font-size:14px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .card .meta{font-size:11px;color:var(--dim);}
+
+  /* ---- fab ---- */
+  .fab-row{position:fixed;bottom:22px;left:0;right:0;display:flex;justify-content:center;gap:12px;z-index:20;}
+  .fab{padding:14px 22px;border-radius:999px;border:none;font-weight:800;font-size:14px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,0.4);}
+  .fab.primary{background:var(--amber);color:#1a1400;}
+  .fab.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line);}
+
+  /* ---- sheet (modal) ---- */
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:30;display:none;}
+  .sheet-backdrop.open{display:block;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--bg);
+    border-radius:20px 20px 0 0;z-index:31;max-height:92vh;overflow-y:auto;display:none;
+    border-top:1px solid var(--line);padding-bottom:30px;}
+  .sheet.open{display:block;}
+  .sheet-head{position:sticky;top:0;background:var(--bg);padding:16px 18px 10px;display:flex;
+    justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);}
+  .sheet-head h2{font-size:17px;margin:0;font-weight:800;}
+  .sheet-body{padding:16px 18px;}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);
+    margin:14px 0 6px;font-weight:700;}
+  label:first-child{margin-top:0;}
+  input[type=text],textarea{width:100%;background:var(--panel2);border:1px solid var(--line);
+    color:var(--text);padding:12px 14px;border-radius:9px;font-size:15px;font-family:inherit;}
+  textarea{min-height:80px;resize:vertical;}
+  .photos-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .photo-chip{position:relative;width:74px;height:74px;border-radius:10px;overflow:hidden;background:var(--panel2);}
+  .photo-chip img{width:100%;height:100%;object-fit:cover;}
+  .photo-chip .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;
+    border:none;width:20px;height:20px;border-radius:50%;font-size:12px;cursor:pointer;line-height:1;}
+  .addphoto{width:74px;height:74px;border-radius:10px;border:1px dashed var(--line);background:transparent;
+    color:var(--dim);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .save-btn{width:100%;margin-top:20px;padding:14px;border:none;border-radius:10px;background:var(--amber);
+    color:#1a1400;font-weight:800;font-size:15px;cursor:pointer;}
+  .del-btn{width:100%;margin-top:10px;padding:14px;border:1px solid var(--red);border-radius:10px;
+    background:transparent;color:var(--red);font-weight:700;font-size:14px;cursor:pointer;}
+  .detail-photos{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+  .detail-photos img{width:120px;height:120px;object-fit:cover;border-radius:10px;flex-shrink:0;}
+  .detail-notes{margin-top:14px;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap;}
+  .detail-name{font-size:20px;font-weight:800;margin:14px 0 2px;}
+  .detail-added{font-size:12px;color:var(--dim);margin-bottom:6px;}
+
+  /* ---- scan/match ---- */
+  .scan-status{font-size:13px;color:var(--dim);text-align:center;padding:10px;background:var(--panel2);
+    border-radius:9px;margin-bottom:14px;line-height:1.5;}
+  .match-row{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:10px;margin-bottom:10px;}
+  .match-row img{width:56px;height:56px;border-radius:9px;object-fit:cover;}
+  .match-row .mname{font-weight:700;font-size:14px;}
+  .match-row .mscore{font-size:12px;color:var(--teal);font-weight:700;}
+  .hint{font-size:12px;color:var(--dim);text-align:center;margin-top:8px;line-height:1.5;}
+  input[type=file]{display:none;}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- GATE -->
+  <div class="gate" id="gate">
+    <div class="badge">Field ID — Restricted</div>
+    <h1 id="gateTitle">Team access code</h1>
+    <p id="gateSub">This register is shared with your team. Enter your code to continue.</p>
+    <input id="gateInput" type="text" inputmode="numeric" placeholder="••••" maxlength="12">
+    <button id="gateBtn">Continue</button>
+    <div class="err" id="gateErr"></div>
+  </div>
+
+  <!-- MAIN -->
+  <div id="mainScreen" style="display:none;">
+    <header>
+      <div class="row1">
+        <div>
+          <h1>Suspect Register</h1>
+          <div class="sub" id="countLabel">0 on file</div>
+        </div>
+        <button class="iconbtn" id="lockBtn" title="Lock">🔒</button>
+      </div>
+      <div class="searchbar">
+        <input id="searchInput" type="text" placeholder="Search by name…">
+      </div>
+    </header>
+    <main>
+      <div id="listWrap"></div>
+    </main>
+    <div class="fab-row">
+      <button class="fab ghost" id="scanBtn">🔎 Match photo</button>
+      <button class="fab primary" id="addBtn">＋ Add suspect</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- Add/Edit sheet -->
+<div class="sheet-backdrop" id="formBackdrop"></div>
+<div class="sheet" id="formSheet">
+  <div class="sheet-head">
+    <h2 id="formTitle">Add suspect</h2>
+    <button class="iconbtn" id="formClose">✕</button>
+  </div>
+  <div class="sheet-body">
+    <label>Name and surname</label>
+    <input type="text" id="nameInput" placeholder="e.g. John Doe">
+    <label>Date of birth / ID number</label>
+    <input type="text" id="dobInput" placeholder="e.g. 12/04/1990 or ID number">
+    <label>Birth origin</label>
+    <input type="text" id="originInput" placeholder="e.g. Town, country of birth">
+    <label>Current address / location</label>
+    <input type="text" id="addressInput" placeholder="Where this person is known to live/stay">
+    <label>Previous arrest info (if applicable)</label>
+    <textarea id="arrestInput" placeholder="Prior incidents, charges, outcomes"></textarea>
+    <label>Items found on suspect</label>
+    <textarea id="itemsInput" placeholder="e.g. knife, stolen goods, ID documents"></textarea>
+    <label>Location of profiling</label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="profileLocInput" placeholder="Where this profiling took place" style="flex:1;">
+      <button class="iconbtn" id="useGpsBtn" title="Use current location" style="flex-shrink:0;">📍</button>
+    </div>
+    <div class="hint" id="gpsStatus" style="text-align:left;margin-top:6px;"></div>
+    <label>Additional notes</label>
+    <textarea id="detailsInput" placeholder="Anything else worth recording"></textarea>
+    <label>Photos</label>
+    <div class="photos-row" id="photosRow">
+      <button class="addphoto" id="addPhotoBtn">＋</button>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <label class="fab ghost" for="importFile" style="flex:1;justify-content:center;margin:0;">🖼 Import from gallery</label>
+    </div>
+    <div class="hint" id="importStatus" style="text-align:left;margin-top:6px;"></div>
+    <input type="file" id="importFile" accept="image/*" multiple>
+    <input type="file" id="photoFile" accept="image/*" capture="environment">
+    <button class="save-btn" id="saveBtn">Save record</button>
+    <button class="del-btn" id="deleteBtn" style="display:none;">Delete this record</button>
+  </div>
+</div>
+
+<!-- Detail sheet -->
+<div class="sheet-backdrop" id="detailBackdrop"></div>
+<div class="sheet" id="detailSheet">
+  <div class="sheet-head">
+    <h2>Record</h2>
+    <button class="iconbtn" id="detailClose">✕</button>
+  </div>
+  <div class="sheet-body" id="detailBody"></div>
+</div>
+
+<!-- Scan sheet -->
+<div class="sheet-backdrop" id="scanBackdrop"></div>
+<div class="sheet" id="scanSheet">
+  <div class="sheet-head">
+    <h2>Match a photo</h2>
+    <button class="iconbtn" id="scanClose">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="scan-status" id="scanStatus">Loading matching engine…</div>
+    <button class="save-btn" id="scanTakeBtn">📷 Take / choose photo</button>
+    <input type="file" id="scanFile" accept="image/*" capture="environment">
+    <div id="scanResults" style="margin-top:16px;"></div>
+    <div class="hint">If a photo doesn't produce a confident match, use name search instead — this feature is experimental.</div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/human/3.3.6/human.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  initializeFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, getDoc, setDoc, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBlTKFQWEzBbcSi0rm5RgC5uKSAYVwLukk",
+  authDomain: "prau-profiling-67d34.firebaseapp.com",
+  projectId: "prau-profiling-67d34",
+  storageBucket: "prau-profiling-67d34.firebasestorage.app",
+  messagingSenderId: "405888273288",
+  appId: "1:405888273288:web:b612d63506ec7de958c83d"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = initializeFirestore(fbApp, { experimentalAutoDetectLongPolling: true, useFetchStreams: false });
+const suspectsCol = collection(db, "suspects");
+const configDoc = doc(db, "config", "passcode");
+
+(function(){
+  "use strict";
+
+  var records = [];
+  var humanInstance = null;
+  var modelsReady = false;
+  var listening = false;
+
+  // ---------- storage helpers (Firestore) ----------
+  async function loadPass(){
+    var snap = await getDoc(configDoc);
+    return snap.exists() ? snap.data().code : null;
+  }
+  async function setPass(p){
+    await setDoc(configDoc, { code: p });
+  }
+  function startListening(){
+    if(listening) return;
+    listening = true;
+    var q = query(suspectsCol, orderBy("addedAt", "asc"));
+    onSnapshot(q, function(snapshot){
+      records = snapshot.docs.map(function(d){
+        var data = d.data();
+        data.id = d.id;
+        return data;
+      });
+      renderList();
+    }, function(err){
+      console.error("listener error", err);
+      listWrap.innerHTML = '<div class="empty">Could not load data — check your internet connection.</div>';
+    });
+  }
+
+  // ---------- gate ----------
+  var gate = document.getElementById("gate");
+  var mainScreen = document.getElementById("mainScreen");
+  var gateInput = document.getElementById("gateInput");
+  var gateBtn = document.getElementById("gateBtn");
+  var gateErr = document.getElementById("gateErr");
+  var gateTitle = document.getElementById("gateTitle");
+  var gateSub = document.getElementById("gateSub");
+
+  async function initGate(){
+    try{
+      var existing = await loadPass();
+      if(!existing){
+        gateTitle.textContent = "Set a team access code";
+        gateSub.textContent = "Choose a code your team will use to open this register. Anyone with this link and code can view it — there's no account system, so keep the link private.";
+      }
+    }catch(e){
+      console.error("initGate check failed", e);
+      gateErr.textContent = "Couldn't reach the database: " + (e && e.message ? e.message : "unknown error");
+    }
+    gateBtn.onclick = async function(){
+      var val = gateInput.value.trim();
+      if(!val){ gateErr.textContent = "Enter a code."; return; }
+      gateErr.textContent = "";
+      gateBtn.textContent = "Checking…";
+      gateBtn.disabled = true;
+      try{
+        var current = await loadPass();
+        if(!current){
+          await setPass(val);
+          enterApp();
+        } else if(val === current){
+          enterApp();
+        } else {
+          gateErr.textContent = "Incorrect code.";
+        }
+      }catch(e){
+        console.error("gate error", e);
+        gateErr.textContent = "Connection error: " + (e && e.message ? e.message : "couldn't reach the database.");
+      }
+      gateBtn.textContent = "Continue";
+      gateBtn.disabled = false;
+    };
+  }
+
+  async function enterApp(){
+    gate.style.display = "none";
+    mainScreen.style.display = "block";
+    startListening();
+    initHuman();
+  }
+
+  document.getElementById("lockBtn").onclick = function(){
+    mainScreen.style.display = "none";
+    gate.style.display = "flex";
+    gateInput.value = "";
+    gateErr.textContent = "";
+    gateTitle.textContent = "Team access code";
+    gateSub.textContent = "This register is shared with your team. Enter your code to continue.";
+  };
+
+  // ---------- list rendering ----------
+  var listWrap = document.getElementById("listWrap");
+  var countLabel = document.getElementById("countLabel");
+  var searchInput = document.getElementById("searchInput");
+
+  function renderList(){
+    var q = searchInput.value.trim().toLowerCase();
+    var filtered = records.filter(function(r){
+      return !q || r.name.toLowerCase().indexOf(q) !== -1;
+    });
+    countLabel.textContent = records.length + " on file" + (q ? " · " + filtered.length + " shown" : "");
+    if(filtered.length === 0){
+      listWrap.innerHTML = '<div class="empty">' + (records.length === 0
+        ? "No suspects on file yet.<br>Tap “Add suspect” to create the first record."
+        : "No names match your search.") + '</div>';
+      return;
+    }
+    var html = '<div class="grid">';
+    filtered.slice().reverse().forEach(function(r){
+      var thumb = r.photos && r.photos[0] ? r.photos[0].dataUrl : null;
+      html += '<div class="card" data-id="'+r.id+'">' +
+        '<div class="thumb" style="'+(thumb ? 'background-image:url(\''+thumb+'\')' : '')+'">' +
+        (thumb ? '' : '👤') + '</div>' +
+        '<div class="info"><div class="name">'+escapeHtml(r.name)+'</div>' +
+        '<div class="meta">'+(r.photos ? r.photos.length : 0)+' photo'+((r.photos&&r.photos.length===1)?'':'s')+'</div></div>' +
+        '</div>';
+    });
+    html += '</div>';
+    listWrap.innerHTML = html;
+    Array.prototype.forEach.call(listWrap.querySelectorAll(".card"), function(el){
+      el.onclick = function(){ openDetail(el.getAttribute("data-id")); };
+    });
+  }
+  searchInput.oninput = renderList;
+
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+
+  // ---------- image helper: resize + compress ----------
+  function fileToCompressedDataUrl(file, maxDim){
+    return new Promise(function(resolve, reject){
+      var img = new Image();
+      var reader = new FileReader();
+      reader.onload = function(e){
+        img.onload = function(){
+          var w = img.width, h = img.height;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var cw = Math.round(w * scale), ch = Math.round(h * scale);
+          var canvas = document.createElement("canvas");
+          canvas.width = cw; canvas.height = ch;
+          canvas.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          resolve({ dataUrl: canvas.toDataURL("image/jpeg", 0.7), canvas: canvas });
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
+  }
+
+  // ---------- add / edit form ----------
+  var formBackdrop = document.getElementById("formBackdrop");
+  var formSheet = document.getElementById("formSheet");
+  var formTitle = document.getElementById("formTitle");
+  var nameInput = document.getElementById("nameInput");
+  var dobInput = document.getElementById("dobInput");
+  var originInput = document.getElementById("originInput");
+  var addressInput = document.getElementById("addressInput");
+  var arrestInput = document.getElementById("arrestInput");
+  var itemsInput = document.getElementById("itemsInput");
+  var profileLocInput = document.getElementById("profileLocInput");
+  var useGpsBtn = document.getElementById("useGpsBtn");
+  var gpsStatus = document.getElementById("gpsStatus");
+  var detailsInput = document.getElementById("detailsInput");
+  var photosRow = document.getElementById("photosRow");
+  var pendingCoords = null;
+
+  useGpsBtn.onclick = function(){
+    if(!navigator.geolocation){
+      gpsStatus.textContent = "Location isn't available on this device/browser — enter it manually.";
+      return;
+    }
+    gpsStatus.textContent = "Getting current location…";
+    function onSuccess(pos){
+      pendingCoords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+      profileLocInput.value = pendingCoords.lat.toFixed(6) + ", " + pendingCoords.lng.toFixed(6);
+      gpsStatus.textContent = "Location captured.";
+    }
+    navigator.geolocation.getCurrentPosition(onSuccess, function(err){
+      // retry once with relaxed accuracy/timeout before giving up
+      navigator.geolocation.getCurrentPosition(onSuccess, function(err2){
+        pendingCoords = null;
+        var reason = (err2 && err2.code === 1) ? "permission denied" :
+                     (err2 && err2.code === 2) ? "position unavailable (check GPS/location is turned on)" :
+                     (err2 && err2.code === 3) ? "timed out" : "unavailable";
+        gpsStatus.textContent = "Couldn't get location (" + reason + ") — enter it manually.";
+      }, { enableHighAccuracy: false, timeout: 20000, maximumAge: 60000 });
+    }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  };
+  var addPhotoBtn = document.getElementById("addPhotoBtn");
+  var photoFile = document.getElementById("photoFile");
+  var saveBtn = document.getElementById("saveBtn");
+  var deleteBtn = document.getElementById("deleteBtn");
+  var formClose = document.getElementById("formClose");
+
+  var editingId = null;
+  var pendingPhotos = []; // {dataUrl, descriptor}
+
+  function openForm(record){
+    editingId = record ? record.id : null;
+    formTitle.textContent = record ? "Edit record" : "Add suspect";
+    nameInput.value = record ? record.name : "";
+    dobInput.value = record ? (record.dob || "") : "";
+    originInput.value = record ? (record.origin || "") : "";
+    addressInput.value = record ? (record.address || "") : "";
+    arrestInput.value = record ? (record.arrestInfo || "") : "";
+    itemsInput.value = record ? (record.itemsFound || "") : "";
+    profileLocInput.value = record ? (record.profileLoc || "") : "";
+    pendingCoords = record && record.profileCoords ? record.profileCoords : null;
+    gpsStatus.textContent = "";
+    detailsInput.value = record ? record.details : "";
+    pendingPhotos = record && record.photos ? record.photos.slice() : [];
+    deleteBtn.style.display = record ? "block" : "none";
+    renderPendingPhotos();
+    formBackdrop.classList.add("open");
+    formSheet.classList.add("open");
+    if(!record) useGpsBtn.onclick(); // auto-capture location for a new profiling entry
+  }
+  function closeForm(){
+    formBackdrop.classList.remove("open");
+    formSheet.classList.remove("open");
+  }
+  formClose.onclick = closeForm;
+  formBackdrop.onclick = closeForm;
+
+  function renderPendingPhotos(){
+    var html = "";
+    pendingPhotos.forEach(function(p, i){
+      html += '<div class="photo-chip"><img src="'+p.dataUrl+'">' +
+        '<button class="rm" data-i="'+i+'">✕</button></div>';
+    });
+    photosRow.innerHTML = html;
+    photosRow.appendChild(addPhotoBtn);
+    Array.prototype.forEach.call(photosRow.querySelectorAll(".rm"), function(btn){
+      btn.onclick = function(){
+        pendingPhotos.splice(parseInt(btn.getAttribute("data-i"), 10), 1);
+        renderPendingPhotos();
+      };
+    });
+  }
+
+  addPhotoBtn.onclick = function(){ photoFile.value = ""; photoFile.click(); };
+  photoFile.onchange = async function(){
+    var file = photoFile.files[0];
+    if(!file) return;
+    var res = await fileToCompressedDataUrl(file, 480);
+    var descriptor = await computeDescriptor(res.canvas);
+    pendingPhotos.push({ dataUrl: res.dataUrl, descriptor: descriptor });
+    renderPendingPhotos();
+  };
+
+  var importFile = document.getElementById("importFile");
+  var importStatus = document.getElementById("importStatus");
+  importFile.onchange = async function(){
+    var files = Array.prototype.slice.call(importFile.files);
+    if(!files.length) return;
+    for(var i=0;i<files.length;i++){
+      importStatus.textContent = "Importing photo " + (i+1) + " of " + files.length + "…";
+      try{
+        var res = await fileToCompressedDataUrl(files[i], 480);
+        var descriptor = await computeDescriptor(res.canvas);
+        pendingPhotos.push({ dataUrl: res.dataUrl, descriptor: descriptor });
+        renderPendingPhotos();
+      }catch(e){
+        console.error("import failed for file", i, e);
+      }
+    }
+    importStatus.textContent = files.length + " photo" + (files.length===1?"":"s") + " imported. Tap “Save record” to keep them.";
+  };
+
+  saveBtn.onclick = async function(){
+    var name = nameInput.value.trim();
+    if(!name){ alert("Enter a name."); return; }
+    var fields = {
+      name: name,
+      dob: dobInput.value.trim(),
+      origin: originInput.value.trim(),
+      address: addressInput.value.trim(),
+      arrestInfo: arrestInput.value.trim(),
+      itemsFound: itemsInput.value.trim(),
+      profileLoc: profileLocInput.value.trim(),
+      profileCoords: pendingCoords,
+      details: detailsInput.value.trim(),
+      photos: pendingPhotos
+    };
+    saveBtn.textContent = "Saving…";
+    try{
+      if(editingId){
+        await updateDoc(doc(db, "suspects", editingId), fields);
+      } else {
+        fields.addedAt = new Date().toISOString();
+        await addDoc(suspectsCol, fields);
+      }
+    }catch(e){
+      console.error(e);
+      alert("Could not save — check your connection and try again.");
+      saveBtn.textContent = "Save record";
+      return;
+    }
+    saveBtn.textContent = "Save record";
+    closeForm();
+  };
+
+  deleteBtn.onclick = async function(){
+    if(!confirm("Delete this record? This can't be undone.")) return;
+    try{
+      await deleteDoc(doc(db, "suspects", editingId));
+    }catch(e){
+      console.error(e);
+      alert("Could not delete — check your connection and try again.");
+      return;
+    }
+    closeForm();
+  };
+
+  document.getElementById("addBtn").onclick = function(){ openForm(null); };
+
+  // ---------- detail view ----------
+  var detailBackdrop = document.getElementById("detailBackdrop");
+  var detailSheet = document.getElementById("detailSheet");
+  var detailBody = document.getElementById("detailBody");
+  var detailClose = document.getElementById("detailClose");
+
+  function openDetail(id){
+    var r = records.find(function(x){ return x.id === id; });
+    if(!r) return;
+    var photosHtml = '<div class="detail-photos">' +
+      (r.photos && r.photos.length ? r.photos.map(function(p){ return '<img src="'+p.dataUrl+'">'; }).join("") : '<div class="hint">No photos on file.</div>') +
+      '</div>';
+    function field(label, value){
+      if(!value) return "";
+      return '<label>'+label+'</label><div class="detail-notes">'+escapeHtml(value)+'</div>';
+    }
+    var mapLink = "";
+    if(r.profileCoords){
+      mapLink = ' <a href="https://maps.google.com/?q='+r.profileCoords.lat+','+r.profileCoords.lng+'" target="_blank" style="color:var(--teal);">view on map</a>';
+    }
+    detailBody.innerHTML = photosHtml +
+      '<div class="detail-name">'+escapeHtml(r.name)+'</div>' +
+      '<div class="detail-added">Added '+ new Date(r.addedAt).toLocaleDateString() +'</div>' +
+      field("Date of birth / ID number", r.dob) +
+      field("Birth origin", r.origin) +
+      field("Current address / location", r.address) +
+      field("Previous arrest info", r.arrestInfo) +
+      field("Items found on suspect", r.itemsFound) +
+      (r.profileLoc ? '<label>Location of profiling</label><div class="detail-notes">'+escapeHtml(r.profileLoc)+mapLink+'</div>' : "") +
+      field("Additional notes", r.details) +
+      '<button class="save-btn" id="editFromDetail">Edit record</button>';
+    document.getElementById("editFromDetail").onclick = function(){
+      closeDetail();
+      openForm(r);
+    };
+    detailBackdrop.classList.add("open");
+    detailSheet.classList.add("open");
+  }
+  function closeDetail(){
+    detailBackdrop.classList.remove("open");
+    detailSheet.classList.remove("open");
+  }
+  detailClose.onclick = closeDetail;
+  detailBackdrop.onclick = closeDetail;
+
+  // ---------- experimental face matching ----------
+  var scanBackdrop = document.getElementById("scanBackdrop");
+  var scanSheet = document.getElementById("scanSheet");
+  var scanClose = document.getElementById("scanClose");
+  var scanStatus = document.getElementById("scanStatus");
+  var scanTakeBtn = document.getElementById("scanTakeBtn");
+  var scanFile = document.getElementById("scanFile");
+  var scanResults = document.getElementById("scanResults");
+
+  async function initHuman(){
+    try{
+      if(typeof Human === "undefined"){
+        scanStatus.textContent = "Matching engine failed to load. Name search still works normally.";
+        return;
+      }
+      var config = {
+        modelBasePath: "https://cdn.jsdelivr.net/npm/@vladmandic/human/models/",
+        face: { enabled: true, detector: { rotation: false }, mesh: { enabled: true }, description: { enabled: true }, iris: { enabled: false }, emotion: { enabled: false } },
+        body: { enabled: false }, hand: { enabled: false }, gesture: { enabled: false }
+      };
+      humanInstance = new Human.Human(config);
+      await humanInstance.load();
+      modelsReady = true;
+      scanStatus.textContent = "Matching engine ready. Take or choose a photo to compare against your records.";
+    }catch(e){
+      console.error(e);
+      scanStatus.textContent = "Matching engine unavailable in this environment. Name search still works normally — use the search bar instead.";
+    }
+  }
+
+  async function computeDescriptor(canvasOrImg){
+    if(!modelsReady || !humanInstance) return null;
+    try{
+      var result = await humanInstance.detect(canvasOrImg);
+      if(result && result.face && result.face.length && result.face[0].embedding){
+        return Array.from(result.face[0].embedding);
+      }
+      return null;
+    }catch(e){
+      console.error("descriptor failed", e);
+      return null;
+    }
+  }
+
+  function euclidean(a, b){
+    if(!a || !b || a.length !== b.length) return Infinity;
+    var sum = 0;
+    for(var i=0;i<a.length;i++){ sum += (a[i]-b[i])*(a[i]-b[i]); }
+    return Math.sqrt(sum);
+  }
+
+  document.getElementById("scanBtn").onclick = function(){
+    scanResults.innerHTML = "";
+    scanBackdrop.classList.add("open");
+    scanSheet.classList.add("open");
+  };
+  scanClose.onclick = function(){ scanBackdrop.classList.remove("open"); scanSheet.classList.remove("open"); };
+  scanBackdrop.onclick = scanClose.onclick;
+
+  scanTakeBtn.onclick = function(){ scanFile.value=""; scanFile.click(); };
+  scanFile.onchange = async function(){
+    var file = scanFile.files[0];
+    if(!file) return;
+    scanResults.innerHTML = '<div class="scan-status">Analyzing…</div>';
+    var res = await fileToCompressedDataUrl(file, 480);
+    var descriptor = await computeDescriptor(res.canvas);
+    if(!descriptor){
+      scanResults.innerHTML = '<div class="scan-status">Could not analyze this photo (no clear face found, or the matching engine isn\'t available). Try name search instead.</div>';
+      return;
+    }
+    var scored = [];
+    records.forEach(function(r){
+      (r.photos||[]).forEach(function(p){
+        if(p.descriptor){
+          var dist = euclidean(descriptor, p.descriptor);
+          scored.push({ record: r, photo: p, dist: dist });
+        }
+      });
+    });
+    scored.sort(function(a,b){ return a.dist - b.dist; });
+    var top = scored.slice(0, 5);
+    if(top.length === 0){
+      scanResults.innerHTML = '<div class="scan-status">No stored photos have matchable face data yet.</div>';
+      return;
+    }
+    var html = "";
+    top.forEach(function(t){
+      var pct = Math.max(0, Math.round((1 - t.dist/1.0) * 100));
+      html += '<div class="match-row" data-id="'+t.record.id+'">' +
+        '<img src="'+t.photo.dataUrl+'">' +
+        '<div><div class="mname">'+escapeHtml(t.record.name)+'</div>' +
+        '<div class="mscore">'+ (t.dist < 0.6 ? "Likely match" : "Possible match") +' · '+pct+'% similarity</div></div>' +
+        '</div>';
+    });
+    scanResults.innerHTML = html;
+    Array.prototype.forEach.call(scanResults.querySelectorAll(".match-row"), function(el){
+      el.onclick = function(){
+        scanClose.onclick();
+        openDetail(el.getAttribute("data-id"));
+      };
+    });
+  };
+
+  // ---------- boot ----------
+  initGate();
+})();
+</script>
+</body>
+</html>

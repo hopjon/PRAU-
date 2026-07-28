@@ -513,10 +513,14 @@ if(/\bward\b/i.test(suburb)) suburb = "";
 
     var label = [road, suburb].filter(Boolean).join(", ");
 
-    targetInput.value = label || "";
-    statusEl.textContent = label
-      ? "Road and suburb captured."
-      : "Location captured, but no road or suburb was found.";
+    if(label){
+  targetInput.value = label;
+  statusEl.textContent = "Road and suburb captured.";
+}else{
+  targetInput.value = lat.toFixed(6) + ", " + lng.toFixed(6);
+  statusEl.textContent =
+    "No road or suburb found — GPS coordinates saved instead.";
+}
   }catch(e){
     statusEl.textContent =
       "Location captured, but the road-and-suburb lookup failed.";

@@ -508,7 +508,8 @@ const vehiclesCol = collection(db, "vehicles");
     var a = data.address || {};
 
     var road = a.road || a.pedestrian || a.footway || "";
-    var suburb = a.suburb || a.neighbourhood || a.city_district || "";
+    var suburb = a.neighbourhood || a.suburb || "";
+if(/\bward\b/i.test(suburb)) suburb = "";
 
     var label = [road, suburb].filter(Boolean).join(", ");
 

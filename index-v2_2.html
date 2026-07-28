@@ -224,7 +224,7 @@
 <!-- Person form sheet -->
 <div class="sheet-backdrop" id="personFormBackdrop"></div>
 <div class="sheet" id="personFormSheet">
-  <div class="sheet-head"><h2 id="personFormTitle">Add suspect</h2><button class="iconbtn" id="personFormClose">✕</button></div>
+  <div class="sheet-head"><h2 id="personFormTitle">Add Person</h2><button class="iconbtn" id="personFormClose">✕</button></div>
   <div class="sheet-body">
     <label>Name and surname</label>
     <input type="text" id="pName" placeholder="e.g. John Doe">
@@ -595,7 +595,7 @@ const vehiclesCol = collection(db, "vehicles");
   var pEditingId = null, pPendingPhotos = [], pPendingCoords = null;
   function openPersonForm(record){
     pEditingId = record ? record.id : null;
-    $("personFormTitle").textContent = record ? "Edit record" : "Add suspect";
+    $("personFormTitle").textContent = record ? "Edit record" : "Add Person";
     $("pName").value = record ? record.name : "";
     $("pDob").value = record ? (record.dob||"") : "";
     $("pOrigin").value = record ? (record.origin||"") : "";

@@ -619,7 +619,9 @@ const vehiclesCol = collection(db, "vehicles");
   function renderPPendingPhotos(){
     var row = $("pPhotosRow"); var html = "";
     pPendingPhotos.forEach(function(p,i){ html += '<div class="photo-chip"><img src="'+p.dataUrl+'"><button class="rm" data-i="'+i+'">✕</button></div>'; });
-    row.innerHTML = html; row.appendChild($("pAddPhotoBtn"));
+    var addButton = $("pAddPhotoBtn");
+row.innerHTML = html;
+row.appendChild(addButton);
     Array.prototype.forEach.call(row.querySelectorAll(".rm"), function(btn){
       btn.onclick = function(){ pPendingPhotos.splice(parseInt(btn.getAttribute("data-i"),10),1); renderPPendingPhotos(); };
     });

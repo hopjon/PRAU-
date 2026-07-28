@@ -825,7 +825,9 @@ row.appendChild(addButton);
   function renderVPendingPhotos(){
     var row = $("vPhotosRow"); var html = "";
     vPendingPhotos.forEach(function(p,i){ html += '<div class="photo-chip"><img src="'+p.dataUrl+'"><button class="rm" data-i="'+i+'">✕</button></div>'; });
-    row.innerHTML = html; row.appendChild($("vAddPhotoBtn"));
+    var addButton = $("vAddPhotoBtn");
+row.innerHTML = html;
+row.appendChild(addButton);
     Array.prototype.forEach.call(row.querySelectorAll(".rm"), function(btn){
       btn.onclick = function(){ vPendingPhotos.splice(parseInt(btn.getAttribute("data-i"),10),1); renderVPendingPhotos(); };
     });

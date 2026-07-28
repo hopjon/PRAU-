@@ -65,14 +65,19 @@ h1{
 }
 
 .card{
-    flex:1;
     background:#181818;
     border:1px solid #3a3120;
     border-radius:14px;
-    padding:22px;
-    text-align:center;
+
+    height:120px;
+
+    display:flex;
+    flex-direction:column;
+    justify-content:center;
+    align-items:center;
+
     cursor:pointer;
-    transition:0.25s ease;
+    transition:.25s;
 }
 
 .card:hover{

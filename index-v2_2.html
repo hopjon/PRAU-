@@ -507,110 +507,53 @@ const vehiclesCol = collection(db, "vehicles");
     var data = await res.json();
     var a = data.address || {};
 
-    var street = [
-      a.house_number,
-      a.road || a.pedestrian || a.footway
-    ].filter(Boolean).join(" ");
+    var road = a.road || a.pedestrian || a.footway || "";
+    var suburb = a.suburb || a.neighbourhood || a.city_district || "";
 
-    var suburb = a.neighbourhood || a.suburb || a.city_district || "";
-    var city = a.city || a.town || a.village || a.municipality || "";
-    var province = a.state || a.province || "";
-    var postalCode = a.postcode || "";
+    var label = [road, suburb].filter(Boolean).join(", ");
 
-    var label = [street, suburb, city, province, postalCode]
-      .filter(Boolean)
-      .join(", ");
-
-    targetInput.value = label || data.display_name || "";
-    statusEl.textContent = targetInput.value
-      ? "Detailed location captured."
-      : "Location captured, but no address name was found.";
+    targetInput.value = label || "";
+    statusEl.textContent = label
+      ? "Road and suburb captured."
+      : "Location captured, but no road or suburb was found.";
   }catch(e){
     statusEl.textContent =
-      "Location captured, but the street-address lookup failed.";
+      "Location captured, but the road-and-suburb lookup failed.";
   }
 }
-  function setupGps(btn, input, statusEl, coordsSetter){
+function setupGps(btn, input, statusEl, coordsSetter){
   btn.onclick = function(){
     if(!navigator.geolocation){
       statusEl.textContent = "Location isn't available — enter it manually.";
       return;
     }
 
-    var bestPosition = null;
-    var watchId = null;
-    var finished = false;
-    var requiredAccuracy = 30;
-    var maximumWait = 30000;
+    statusEl.textContent = "Getting current location…";
 
-    statusEl.textContent = "Waiting for a precise GPS location…";
-
-    function finish(){
-      if(finished) return;
-      finished = true;
-
-      if(watchId !== null){
-        navigator.geolocation.clearWatch(watchId);
-      }
-
-      if(!bestPosition || bestPosition.coords.accuracy > requiredAccuracy){
-        coordsSetter(null);
-        var accuracyText = bestPosition
-          ? " Best reading was about ±" + Math.round(bestPosition.coords.accuracy) + " metres."
-          : "";
-
-        statusEl.textContent =
-          "GPS is not accurate enough yet." + accuracyText +
-          " Move outside, wait a moment, then tap the pin again.";
-        return;
-      }
-
+    function onSuccess(pos){
       var c = {
-        lat: bestPosition.coords.latitude,
-        lng: bestPosition.coords.longitude
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
       };
 
       coordsSetter(c);
       input.value = c.lat.toFixed(6) + ", " + c.lng.toFixed(6);
-
-      statusEl.textContent =
-        "Precise GPS location captured (about ±" +
-        Math.round(bestPosition.coords.accuracy) +
-        " metres) — looking up address…";
-
+      statusEl.textContent = "Location captured — looking up road and suburb…";
       reverseGeocode(c.lat, c.lng, input, statusEl);
     }
 
-    watchId = navigator.geolocation.watchPosition(
-      function(pos){
-        if(!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy){
-          bestPosition = pos;
-        }
-
+    navigator.geolocation.getCurrentPosition(
+      onSuccess,
+      function(){
         statusEl.textContent =
-          "Improving GPS accuracy… best reading: ±" +
-          Math.round(bestPosition.coords.accuracy) +
-          " metres.";
-
-        if(bestPosition.coords.accuracy <= requiredAccuracy){
-          finish();
-        }
-      },
-      function(err){
-        if(err && err.code === 1){
-          finished = true;
-          if(watchId !== null) navigator.geolocation.clearWatch(watchId);
-          statusEl.textContent = "Location permission was denied.";
-        }
+          "Couldn't get location — enter the road and suburb manually.";
       },
       {
         enableHighAccuracy: true,
-        maximumAge: 0,
-        timeout: maximumWait
+        timeout: 20000,
+        maximumAge: 0
       }
     );
-
-    setTimeout(finish, maximumWait);
   };
 }
 

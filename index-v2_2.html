@@ -496,18 +496,40 @@ const vehiclesCol = collection(db, "vehicles");
     });
   }
   async function reverseGeocode(lat, lng, targetInput, statusEl){
-    try{
-      var url = "https://nominatim.openstreetmap.org/reverse?format=json&lat="+lat+"&lon="+lng+"&zoom=17&addressdetails=1";
-      var res = await fetch(url, { headers: { "Accept": "application/json" } });
-      var data = await res.json();
-      var a = data.address || {};
-      var street = a.road || a.pedestrian || a.suburb || a.neighbourhood || "";
-      var area = a.suburb || a.city || a.town || a.village || a.county || "";
-      var label = [street, area].filter(Boolean).join(", ");
-      if(label){ targetInput.value = label; statusEl.textContent = "Location captured."; }
-      else{ statusEl.textContent = "Location captured (no street name found — coordinates kept)."; }
-    }catch(e){ statusEl.textContent = "Location captured (street lookup failed — coordinates kept)."; }
+  try{
+    var url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
+      lat + "&lon=" + lng + "&zoom=18&addressdetails=1";
+
+    var res = await fetch(url, {
+      headers: { "Accept": "application/json" }
+    });
+
+    var data = await res.json();
+    var a = data.address || {};
+
+    var street = [
+      a.house_number,
+      a.road || a.pedestrian || a.footway
+    ].filter(Boolean).join(" ");
+
+    var suburb = a.neighbourhood || a.suburb || a.city_district || "";
+    var city = a.city || a.town || a.village || a.municipality || "";
+    var province = a.state || a.province || "";
+    var postalCode = a.postcode || "";
+
+    var label = [street, suburb, city, province, postalCode]
+      .filter(Boolean)
+      .join(", ");
+
+    targetInput.value = label || data.display_name || "";
+    statusEl.textContent = targetInput.value
+      ? "Detailed location captured."
+      : "Location captured, but no address name was found.";
+  }catch(e){
+    statusEl.textContent =
+      "Location captured, but the street-address lookup failed.";
   }
+}
   function setupGps(btn, input, statusEl, coordsSetter){
     btn.onclick = function(){
       if(!navigator.geolocation){ statusEl.textContent = "Location isn't available — enter it manually."; return; }

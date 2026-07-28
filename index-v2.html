@@ -66,8 +66,8 @@ h1{
 }
 
 .card{
-    width:90px;
-    height:90px;
+    width:100px;
+    height:100px;
 
     background:#181818;
     border:1px solid #3a3120;
@@ -80,6 +80,7 @@ h1{
 
     cursor:pointer;
     transition:.25s;
+    box-sizing:border-box;
 }
 .card:hover{
     border-color:#D4AF37;
@@ -102,14 +103,38 @@ h1{
 
 @media (max-width:768px){
 
+.logo{
+    width:70px;
+}
+
+h1{
+    font-size:30px;
+}
+
+.subtitle{
+    font-size:14px;
+}
+
+.searchBox{
+    font-size:16px;
+    padding:12px;
+}
+
 .cards{
-    grid-template-columns:repeat(3, 90px);
+    display:grid;
+    grid-template-columns:repeat(3, 85px);
     justify-content:center;
     gap:10px;
 }
 
+.card{
+    width:85px;
+    height:85px;
+}
+
 .card i{
     font-size:24px;
+    margin-bottom:8px;
 }
 
 .card h3{

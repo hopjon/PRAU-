@@ -173,7 +173,18 @@
       </div>
       <div class="searchbar"><input type="text" id="peopleSearch" placeholder="Search by name…"></div>
     </header>
-    <main><div id="peopleList"></div></main>
+    <main>
+  <div class="photo-gallery" id="peoplePhotoGallery" style="display:none;">
+    <div class="photo-gallery-head">
+      <div class="photo-gallery-title">Photos on file</div>
+      <div class="photo-gallery-count" id="peoplePhotoCount"></div>
+    </div>
+
+    <div class="photo-gallery-row" id="peoplePhotoRow"></div>
+  </div>
+
+  <div id="peopleList"></div>
+</main>
     <div class="fab-row" id="peopleFabs">
       <button class="fab ghost" id="scanBtn">🔎 Match photo</button>
       <button class="fab primary" id="addPersonBtn">＋ Add suspect</button>
@@ -525,6 +536,7 @@ const vehiclesCol = collection(db, "vehicles");
     var q = $("peopleSearch").value.trim().toLowerCase();
     var filtered = suspects.filter(function(r){ return !q || r.name.toLowerCase().indexOf(q) !== -1; });
     $("peopleCount").textContent = suspects.length + " on file" + (q ? " · " + filtered.length + " shown" : "");
+    renderPeoplePhotoGallery(filtered);
     var wrap = $("peopleList");
     if(!filtered.length){
       wrap.innerHTML = '<div class="empty">' + (suspects.length===0 ? "No suspects on file yet.<br>Tap “Add suspect” to create the first record." : "No names match your search.") + '</div>';
@@ -542,6 +554,42 @@ const vehiclesCol = collection(db, "vehicles");
       el.onclick = function(){ openPersonDetail(el.getAttribute("data-id")); };
     });
   }
+  function renderPeoplePhotoGallery(records){
+  var photos = [];
+
+  records.slice().reverse().forEach(function(record){
+    (record.photos || []).forEach(function(photo){
+      if(photo && photo.dataUrl){
+        photos.push({
+          id: record.id,
+          name: record.name,
+          dataUrl: photo.dataUrl
+        });
+      }
+    });
+  });
+
+  $("peoplePhotoGallery").style.display = photos.length ? "block" : "none";
+
+  $("peoplePhotoCount").textContent =
+    photos.length + " photo" + (photos.length === 1 ? "" : "s");
+
+  $("peoplePhotoRow").innerHTML = photos.map(function(photo){
+    return '<button class="photo-gallery-item" type="button" data-id="' + photo.id + '">' +
+      '<img src="' + photo.dataUrl + '" alt="Photo of ' + escapeHtml(photo.name) + '">' +
+      '<span>' + escapeHtml(photo.name) + '</span>' +
+    '</button>';
+  }).join("");
+
+  Array.prototype.forEach.call(
+    $("peoplePhotoRow").querySelectorAll(".photo-gallery-item"),
+    function(el){
+      el.onclick = function(){
+        openPersonDetail(el.getAttribute("data-id"));
+      };
+    }
+  );
+}
   $("peopleSearch").oninput = renderPeopleList;
 
   var pEditingId = null, pPendingPhotos = [], pPendingCoords = null;

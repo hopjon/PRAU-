@@ -531,27 +531,88 @@ const vehiclesCol = collection(db, "vehicles");
   }
 }
   function setupGps(btn, input, statusEl, coordsSetter){
-    btn.onclick = function(){
-      if(!navigator.geolocation){ statusEl.textContent = "Location isn't available — enter it manually."; return; }
-      statusEl.textContent = "Getting current location…";
-      function onSuccess(pos){
-        var c = { lat: pos.coords.latitude, lng: pos.coords.longitude };
-        coordsSetter(c);
-        input.value = c.lat.toFixed(6) + ", " + c.lng.toFixed(6);
-        statusEl.textContent = "Location captured — looking up street name…";
-        reverseGeocode(c.lat, c.lng, input, statusEl);
+  btn.onclick = function(){
+    if(!navigator.geolocation){
+      statusEl.textContent = "Location isn't available — enter it manually.";
+      return;
+    }
+
+    var bestPosition = null;
+    var watchId = null;
+    var finished = false;
+    var requiredAccuracy = 30;
+    var maximumWait = 30000;
+
+    statusEl.textContent = "Waiting for a precise GPS location…";
+
+    function finish(){
+      if(finished) return;
+      finished = true;
+
+      if(watchId !== null){
+        navigator.geolocation.clearWatch(watchId);
       }
-      navigator.geolocation.getCurrentPosition(onSuccess, function(err){
-        navigator.geolocation.getCurrentPosition(onSuccess, function(err2){
-          coordsSetter(null);
-          var reason = (err2 && err2.code === 1) ? "permission denied" :
-                       (err2 && err2.code === 2) ? "position unavailable (check GPS is on)" :
-                       (err2 && err2.code === 3) ? "timed out" : "unavailable";
-          statusEl.textContent = "Couldn't get location (" + reason + ") — enter it manually.";
-        }, { enableHighAccuracy:false, timeout:20000, maximumAge:60000 });
-      }, { enableHighAccuracy:true, timeout:15000, maximumAge:0 });
-    };
-  }
+
+      if(!bestPosition || bestPosition.coords.accuracy > requiredAccuracy){
+        coordsSetter(null);
+        var accuracyText = bestPosition
+          ? " Best reading was about ±" + Math.round(bestPosition.coords.accuracy) + " metres."
+          : "";
+
+        statusEl.textContent =
+          "GPS is not accurate enough yet." + accuracyText +
+          " Move outside, wait a moment, then tap the pin again.";
+        return;
+      }
+
+      var c = {
+        lat: bestPosition.coords.latitude,
+        lng: bestPosition.coords.longitude
+      };
+
+      coordsSetter(c);
+      input.value = c.lat.toFixed(6) + ", " + c.lng.toFixed(6);
+
+      statusEl.textContent =
+        "Precise GPS location captured (about ±" +
+        Math.round(bestPosition.coords.accuracy) +
+        " metres) — looking up address…";
+
+      reverseGeocode(c.lat, c.lng, input, statusEl);
+    }
+
+    watchId = navigator.geolocation.watchPosition(
+      function(pos){
+        if(!bestPosition || pos.coords.accuracy < bestPosition.coords.accuracy){
+          bestPosition = pos;
+        }
+
+        statusEl.textContent =
+          "Improving GPS accuracy… best reading: ±" +
+          Math.round(bestPosition.coords.accuracy) +
+          " metres.";
+
+        if(bestPosition.coords.accuracy <= requiredAccuracy){
+          finish();
+        }
+      },
+      function(err){
+        if(err && err.code === 1){
+          finished = true;
+          if(watchId !== null) navigator.geolocation.clearWatch(watchId);
+          statusEl.textContent = "Location permission was denied.";
+        }
+      },
+      {
+        enableHighAccuracy: true,
+        maximumAge: 0,
+        timeout: maximumWait
+      }
+    );
+
+    setTimeout(finish, maximumWait);
+  };
+}
 
   // ================= PEOPLE =================
   function renderPeopleList(){

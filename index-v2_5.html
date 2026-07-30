@@ -367,7 +367,8 @@
     <textarea id="pNotes" placeholder="Anything else worth recording"></textarea>
 <label>Photo / profiling date</label>
 <input type="date" id="pPhotoDate">
-
+<label>Image by</label>
+<input type="text" id="pImageBy" placeholder="Enter name">
 <label>Photos</label>
 <div class="photos-row" id="pPhotosRow"><button class="addphoto" id="pAddPhotoBtn">＋</button></div>
     <div style="display:flex;gap:8px;margin-top:8px;">
@@ -1083,6 +1084,7 @@ function setupGps(btn, input, statusEl, coordsSetter){
     $("pNotes").value = record ? (record.details||"") : "";
     pPendingPhotos = record && record.photos ? record.photos.slice() : [];
     $("pPhotoDate").value = new Date().toISOString().slice(0,10);
+    $("pImageBy").value = "";
     $("pDeleteBtn").style.display = record ? "block" : "none";
     renderPPendingPhotos();
     $("personFormBackdrop").classList.add("open"); $("personFormSheet").classList.add("open");
@@ -1108,9 +1110,10 @@ row.appendChild(addButton);
     var res = await fileToCompressedDataUrl(file, 480);
     var descriptor = await computeDescriptor(res.canvas);
     pPendingPhotos.push({
-  dataUrl: res.dataUrl,
-  descriptor: descriptor,
-  profiledAt: $("pPhotoDate").value
+    dataUrl: res.dataUrl,
+    descriptor: descriptor,
+    profiledAt: $("pPhotoDate").value,
+    imageBy: $("pImageBy").value.trim()
 });
     renderPPendingPhotos();
   };
@@ -1122,9 +1125,10 @@ row.appendChild(addButton);
         var res = await fileToCompressedDataUrl(files[i], 480);
         var descriptor = await computeDescriptor(res.canvas);
         pPendingPhotos.push({
-  dataUrl: res.dataUrl,
-  descriptor: descriptor,
-  profiledAt: $("pPhotoDate").value
+    dataUrl: res.dataUrl,
+    descriptor: descriptor,
+    profiledAt: $("pPhotoDate").value,
+    imageBy: $("pImageBy").value.trim()
 });
         renderPPendingPhotos();
       }catch(e){ console.error(e); }

@@ -555,17 +555,16 @@ $("photoLightbox").onclick = function(e){
 
   onAuthStateChanged(auth, function(user){
     currentUser = user;
+
     if(user){
-    $("whoLabel").textContent = user.email;
-    show("homeScreen");
-    startListening();
-    initHuman();
-}
-  else {
-      show("loginScreen");
-      
+        $("whoLabel").textContent = user.email;
+        show("homeScreen");
+        startListening();
+        initHuman();
+    }else{
+        show("loginScreen");
     }
-  });
+});
 
  
 

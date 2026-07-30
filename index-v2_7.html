@@ -551,17 +551,7 @@ $("photoLightbox").onclick = function(e){
   };
   $("logoutLink").onclick = function(e){ e.preventDefault(); signOut(auth); };
 
- var mySessionId = localStorage.getItem("prauDeviceId");
 
-if(!mySessionId){
-    mySessionId = (crypto && crypto.randomUUID)
-        ? crypto.randomUUID()
-        : (Date.now() + "-" + Math.random().toString(36).slice(2));
-
-    localStorage.setItem("prauDeviceId", mySessionId);
-}
-
-var sessionUnsub = null;
 
   onAuthStateChanged(auth, function(user){
     currentUser = user;
@@ -573,7 +563,7 @@ var sessionUnsub = null;
 }
   else {
       show("loginScreen");
-      if(sessionUnsub){ sessionUnsub(); sessionUnsub = null; }
+      
     }
   });
 

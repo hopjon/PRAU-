@@ -127,6 +127,43 @@
 .photo-gallery-item{width:78px;flex:0 0 78px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);padding:0;cursor:pointer;scroll-snap-align:start;color:var(--text);text-align:left;}
 .photo-gallery-item img{display:block;width:76px;height:76px;object-fit:cover;background:var(--panel2);}
 .photo-gallery-item span{display:block;padding:6px 7px;font:700 10px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.photo-lightbox{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,0.94);
+}
+.photo-lightbox.open{display:flex;}
+.photo-lightbox img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  border-radius:8px;
+}
+.photo-lightbox-close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:50%;
+  background:rgba(255,255,255,0.16);
+  color:#fff;
+  font-size:28px;
+  cursor:pointer;
+}
+.detail-photo-btn{
+  flex-shrink:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+}
 </style>
 </head>
 <body>
@@ -321,7 +358,11 @@
     <div class="hint">If a photo doesn't produce a confident match, use search instead — this feature is experimental.</div>
   </div>
 </div>
-
+<div class="photo-lightbox" id="photoLightbox">
+  <button class="photo-lightbox-close" id="photoLightboxClose" type="button">×</button>
+  <img id="photoLightboxImage" alt="Full-size photo">
+</div>
+  
 <script src="https://cdnjs.cloudflare.com/ajax/libs/human/3.3.6/human.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
@@ -363,6 +404,24 @@ const vehiclesCol = collection(db, "vehicles");
     });
   }
   function $(id){ return document.getElementById(id); }
+ function openPhotoLightbox(src, alt){
+  $("photoLightboxImage").src = src;
+  $("photoLightboxImage").alt = alt || "Full-size photo";
+  $("photoLightbox").classList.add("open");
+}
+
+function closePhotoLightbox(){
+  $("photoLightbox").classList.remove("open");
+  $("photoLightboxImage").src = "";
+}
+
+$("photoLightboxClose").onclick = closePhotoLightbox;
+
+$("photoLightbox").onclick = function(e){
+  if(e.target === $("photoLightbox")){
+    closePhotoLightbox();
+  }
+};
   function show(id){
     Array.prototype.forEach.call(document.querySelectorAll(".screen"), function(s){ s.classList.remove("active"); });
     $(id).classList.add("active");
@@ -716,6 +775,15 @@ row.appendChild(addButton);
       (r.profileLoc ? '<label>Location of profiling</label><div class="detail-notes">'+escapeHtml(r.profileLoc)+mapLink+'</div>' : "") +
       field("Additional notes", r.details) +
       '<button class="primary-btn" id="pEditFromDetail" style="margin-top:16px;">Edit record</button>';
+    Array.prototype.forEach.call(
+  $("personDetailBody").querySelectorAll(".detail-photo-btn"),
+  function(el){
+    el.onclick = function(){
+      var photo = r.photos[parseInt(el.getAttribute("data-photo-index"), 10)];
+      openPhotoLightbox(photo.dataUrl, "Photo of " + r.name);
+    };
+  }
+);
     $("pEditFromDetail").onclick = function(){ closePersonDetail(); openPersonForm(r); };
     $("personDetailBackdrop").classList.add("open"); $("personDetailSheet").classList.add("open");
   }
@@ -874,7 +942,15 @@ row.appendChild(addButton);
 
   function openVehicleDetail(id){
     var r = vehicles.find(function(x){ return x.id===id; }); if(!r) return;
-    var photosHtml = '<div class="detail-photos">' + (r.photos && r.photos.length ? r.photos.map(function(p){return '<img src="'+p.dataUrl+'">';}).join("") : '<div class="hint">No photos on file.</div>') + '</div>';
+   var photosHtml = '<div class="detail-photos">' +
+  (r.photos && r.photos.length
+    ? r.photos.map(function(p, i){
+        return '<button class="detail-photo-btn" type="button" data-photo-index="' + i + '">' +
+          '<img src="' + p.dataUrl + '" alt="Photo of ' + escapeHtml(r.name) + '">' +
+        '</button>';
+      }).join("")
+    : '<div class="hint">No photos on file.</div>') +
+  '</div>';
     function field(label,value){ if(!value) return ""; return '<label>'+label+'</label><div class="detail-notes">'+escapeHtml(value)+'</div>'; }
     var mapLink = r.profileCoords ? ' <a href="https://maps.google.com/?q='+r.profileCoords.lat+','+r.profileCoords.lng+'" target="_blank" style="color:var(--teal);">view on map</a>' : "";
     var title = ((r.make||"")+" "+(r.model||"")).trim() || "Unknown vehicle";

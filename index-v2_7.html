@@ -566,31 +566,18 @@ var sessionUnsub = null;
   onAuthStateChanged(auth, function(user){
     currentUser = user;
     if(user){
-      $("whoLabel").textContent = user.email;
-      show("homeScreen");
-      startListening();
-      initHuman();
-      startSessionGuard(user);
-    } else {
+    $("whoLabel").textContent = user.email;
+    show("homeScreen");
+    startListening();
+    initHuman();
+}
+  else {
       show("loginScreen");
       if(sessionUnsub){ sessionUnsub(); sessionUnsub = null; }
     }
   });
 
-  async function startSessionGuard(user){
-    var sessionDoc = doc(db, "sessions", user.uid);
-    try{
-      await setDoc(sessionDoc, { sessionId: mySessionId, device: navigator.userAgent, at: new Date().toISOString() });
-    }catch(e){ console.error("session guard write failed", e); }
-    if(sessionUnsub){ sessionUnsub(); }
-    sessionUnsub = onSnapshot(sessionDoc, function(snap){
-      var data = snap.data();
-      if(data && data.sessionId && data.sessionId !== mySessionId){
-        alert("You've been signed out because this account was used to sign in on another device.");
-        signOut(auth);
-      }
-    });
-  }
+ 
 
   // ---------- firestore listeners ----------
   function startListening(){

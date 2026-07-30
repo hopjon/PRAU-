@@ -435,7 +435,7 @@ $("photoLightbox").onclick = function(e){
     try{
       await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
     }catch(e){
-      loginErr.textContent = "Auth / Invalid email or password.";
+      loginErr.textContent = "Access Denied";
     }
     loginBtn.textContent = "Sign in"; loginBtn.disabled = false;
   };

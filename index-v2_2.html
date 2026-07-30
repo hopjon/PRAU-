@@ -507,25 +507,38 @@ async function startSingleDeviceSession(user){
   };
   $("logoutLink").onclick = function(e){ e.preventDefault(); signOut(auth); };
 
+ var mySessionId = null;
+  var sessionUnsub = null;
+
   onAuthStateChanged(auth, function(user){
     currentUser = user;
     if(user){
       $("whoLabel").textContent = user.email;
-      startSingleDeviceSession(user);
       show("homeScreen");
       startListening();
       initHuman();
+      startSessionGuard(user);
     } else {
-      if(stopSessionListener){
-  stopSessionListener();
-  stopSessionListener = null;
-}
-
-activeSessionId = null;
-sessionStartedForUid = null;
       show("loginScreen");
+      if(sessionUnsub){ sessionUnsub(); sessionUnsub = null; }
     }
   });
+
+  async function startSessionGuard(user){
+    mySessionId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(36).slice(2));
+    var sessionDoc = doc(db, "sessions", user.uid);
+    try{
+      await setDoc(sessionDoc, { sessionId: mySessionId, device: navigator.userAgent, at: new Date().toISOString() });
+    }catch(e){ console.error("session guard write failed", e); }
+    if(sessionUnsub){ sessionUnsub(); }
+    sessionUnsub = onSnapshot(sessionDoc, function(snap){
+      var data = snap.data();
+      if(data && data.sessionId && data.sessionId !== mySessionId){
+        alert("You've been signed out because this account was used to sign in on another device.");
+        signOut(auth);
+      }
+    });
+  }
 
   // ---------- firestore listeners ----------
   function startListening(){

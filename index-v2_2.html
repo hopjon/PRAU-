@@ -164,6 +164,17 @@
   background:transparent;
   cursor:pointer;
 }
+.photo-lightbox-caption{
+  position:absolute;
+  left:20px;
+  right:20px;
+  bottom:24px;
+  color:#fff;
+  text-align:center;
+  font-size:16px;
+  font-weight:800;
+  text-shadow:0 2px 8px rgba(0,0,0,0.9);
+}
 </style>
 </head>
 <body>
@@ -361,6 +372,7 @@
 <div class="photo-lightbox" id="photoLightbox">
   <button class="photo-lightbox-close" id="photoLightboxClose" type="button">×</button>
   <img id="photoLightboxImage" alt="Full-size photo">
+  <div class="photo-lightbox-caption" id="photoLightboxCaption"></div>
 </div>
   
 <script src="https://cdnjs.cloudflare.com/ajax/libs/human/3.3.6/human.js"></script>
@@ -404,9 +416,10 @@ const vehiclesCol = collection(db, "vehicles");
     });
   }
   function $(id){ return document.getElementById(id); }
- function openPhotoLightbox(src, alt){
+ function openPhotoLightbox(src, name){
   $("photoLightboxImage").src = src;
-  $("photoLightboxImage").alt = alt || "Full-size photo";
+  $("photoLightboxImage").alt = name ? "Photo of " + name : "Full-size photo";
+  $("photoLightboxCaption").textContent = name || "";
   $("photoLightbox").classList.add("open");
 }
 
@@ -780,7 +793,7 @@ row.appendChild(addButton);
   function(el){
     el.onclick = function(){
       var photo = r.photos[parseInt(el.getAttribute("data-photo-index"), 10)];
-      openPhotoLightbox(photo.dataUrl, "Photo of " + r.name);
+      openPhotoLightbox(photo.dataUrl, r.name);
     };
   }
 );

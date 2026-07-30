@@ -349,6 +349,12 @@
     <input type="text" id="pAddress" placeholder="Where this person is known to live/stay">
     <label>Previous arrest info (if applicable)</label>
     <textarea id="pArrest" placeholder="Prior incidents, charges, outcomes"></textarea>
+    <label>Deceased</label>
+
+<div style="display:flex;align-items:center;gap:10px;">
+    <input type="checkbox" id="pDeceased" style="width:20px;height:20px;">
+    <span>Person is deceased</span>
+</div>
     <label>Items found on suspect</label>
     <textarea id="pItems" placeholder="e.g. knife, stolen goods, ID documents"></textarea>
     <label>Location of profiling</label>
@@ -1068,6 +1074,7 @@ function setupGps(btn, input, statusEl, coordsSetter){
     $("pDob").value = record ? (record.dob||"") : "";
     $("pOrigin").value = record ? (record.origin||"") : "";
     $("pAddress").value = record ? (record.address||"") : "";
+    $("pDeceased").checked = record ? !!record.deceased : false;
     $("pArrest").value = record ? (record.arrestInfo||"") : "";
     $("pItems").value = record ? (record.itemsFound||"") : "";
     $("pProfileLoc").value = record ? (record.profileLoc||"") : "";
@@ -1129,7 +1136,7 @@ row.appendChild(addButton);
     if(!name){ alert("Enter a name."); return; }
     var fields = {
       name: name, dob: $("pDob").value.trim(), origin: $("pOrigin").value.trim(),
-      address: $("pAddress").value.trim(), arrestInfo: $("pArrest").value.trim(),
+      address: $("pAddress").value.trim(), deceased: $("pDeceased").checked, arrestInfo: $("pArrest").value.trim(),
       itemsFound: $("pItems").value.trim(), profileLoc: $("pProfileLoc").value.trim(),
       profileCoords: pPendingCoords, details: $("pNotes").value.trim(), photos: pPendingPhotos,
       addedBy: currentUser ? currentUser.email : "unknown"

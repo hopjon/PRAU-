@@ -1322,24 +1322,126 @@ row.appendChild(addButton);
   var plateOcrWorker = null;
 
 async function scanVehiclePlate(file){
+  var status = $("vPlateScanStatus");
 
-    var status = $("vPlateScanStatus");
+  try{
+    status.textContent = "Preparing image…";
 
-    try{
+    if(!plateOcrWorker){
+      plateOcrWorker = await Tesseract.createWorker("eng");
+      await plateOcrWorker.setParameters({
+        tessedit_char_whitelist: "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ",
+        preserve_interword_spaces: "1"
+      });
+    }
 
-        status.textContent = "Preparing image…";
+    // Load original image
+    var originalCanvas = await new Promise(function(resolve, reject){
+      var reader = new FileReader();
+      reader.onload = function(e){
+        var img = new Image();
+        img.onload = function(){
+          var canvas = document.createElement("canvas");
+          // Upscale small images for better OCR
+          var scale = Math.max(1.5, Math.min(3, 1600 / Math.max(img.width, img.height)));
+          canvas.width  = Math.round(img.width  * scale);
+          canvas.height = Math.round(img.height * scale);
+          var ctx = canvas.getContext("2d");
+          ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+          resolve(canvas);
+        };
+        img.onerror = reject;
+        img.src = e.target.result;
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(file);
+    });
 
-        if(!plateOcrWorker){
+    // Create a high-contrast black-and-white version
+    function makeHighContrast(srcCanvas){
+      var c = document.createElement("canvas");
+      c.width  = srcCanvas.width;
+      c.height = srcCanvas.height;
+      var ctx = c.getContext("2d");
+      ctx.drawImage(srcCanvas, 0, 0);
 
-            plateOcrWorker = await Tesseract.createWorker("eng");
+      var imgData = ctx.getImageData(0, 0, c.width, c.height);
+      var d = imgData.data;
 
-            await plateOcrWorker.setParameters({
-                tessedit_char_whitelist:
-                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- ",
-                preserve_interword_spaces: "1"
-            });
+      for(var i = 0; i < d.length; i += 4){
+        // Convert to grayscale
+        var gray = 0.299*d[i] + 0.587*d[i+1] + 0.114*d[i+2];
+        // Strong contrast stretch
+        gray = ((gray - 128) * 2.2) + 128;
+        // Hard threshold → pure black/white
+        gray = gray > 140 ? 255 : 0;
+        d[i] = d[i+1] = d[i+2] = gray;
+      }
+      ctx.putImageData(imgData, 0, 0);
+      return c;
+    }
 
-        }
+    var contrastCanvas = makeHighContrast(originalCanvas);
+
+    status.textContent = "Reading number plate…";
+
+    // Try several page-segmentation modes
+    var modes = ["7", "6", "11", "8"];
+    var allTexts = [];
+
+    for(var m = 0; m < modes.length; m++){
+      await plateOcrWorker.setParameters({ tessedit_pageseg_mode: modes[m] });
+
+      // Try both the original and the high-contrast versions
+      var r1 = await plateOcrWorker.recognize(originalCanvas);
+      var r2 = await plateOcrWorker.recognize(contrastCanvas);
+
+      [r1, r2].forEach(function(r){
+        var t = (r.data.text || "")
+          .toUpperCase()
+          .replace(/[^A-Z0-9\- ]/g, " ")
+          .replace(/\s+/g, " ")
+          .trim();
+        if(t) allTexts.push(t);
+      });
+    }
+
+    // Extract plate-like candidates
+    var candidates = [];
+    allTexts.forEach(function(text){
+      // Common South African patterns
+      var matches = text.match(/\b[A-Z]{1,3}[\s\-]?[0-9]{1,5}[\s\-]?[A-Z]{0,3}\b/g);
+      if(matches){
+        matches.forEach(function(m){
+          var clean = m.replace(/\s+/g, " ").trim();
+          if(clean.length >= 5) candidates.push(clean);
+        });
+      }
+    });
+
+    // Remove duplicates and sort by length (longer is usually better)
+    candidates = Array.from(new Set(candidates))
+      .sort(function(a,b){ return b.length - a.length; });
+
+    if(!candidates.length){
+      status.innerHTML = "<strong>No plate number could be read.</strong><br>Try a closer, clearer, well-lit photo of the plate only.";
+      return;
+    }
+
+    // Take the best candidate
+    var detected = candidates[0];
+
+    $("vPlate").value = detected;
+    status.innerHTML =
+      "<strong>Detected:</strong> " + detected +
+      "<br>Please check the registration above before saving." +
+      (candidates.length > 1 ? "<br><small>Other possibilities: " + candidates.slice(1,4).join(" · ") + "</small>" : "");
+
+  }catch(e){
+    console.error("Plate OCR failed:", e);
+    status.textContent = "Plate scan failed. Enter the registration manually.";
+  }
+}
 
         /*
          * Load the selected image and create an enlarged,

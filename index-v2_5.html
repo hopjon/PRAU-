@@ -551,8 +551,17 @@ $("photoLightbox").onclick = function(e){
   };
   $("logoutLink").onclick = function(e){ e.preventDefault(); signOut(auth); };
 
- var mySessionId = null;
-  var sessionUnsub = null;
+ var mySessionId = localStorage.getItem("prauDeviceId");
+
+if(!mySessionId){
+    mySessionId = (crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : (Date.now() + "-" + Math.random().toString(36).slice(2));
+
+    localStorage.setItem("prauDeviceId", mySessionId);
+}
+
+var sessionUnsub = null;
 
   onAuthStateChanged(auth, function(user){
     currentUser = user;
@@ -569,7 +578,6 @@ $("photoLightbox").onclick = function(e){
   });
 
   async function startSessionGuard(user){
-    mySessionId = (crypto && crypto.randomUUID) ? crypto.randomUUID() : (Date.now()+"-"+Math.random().toString(36).slice(2));
     var sessionDoc = doc(db, "sessions", user.uid);
     try{
       await setDoc(sessionDoc, { sessionId: mySessionId, device: navigator.userAgent, at: new Date().toISOString() });

@@ -382,8 +382,7 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
-  initializeFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy
+  initializeFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
@@ -412,6 +411,9 @@ const vehiclesCol = collection(db, "vehicles");
   var modelsReady = false;
   var listening = false;
   var currentUser = null;
+  var activeSessionId = null;
+var stopSessionListener = null;
+var sessionStartedForUid = null;
 
   function escapeHtml(s){
     return (s||"").replace(/[&<>"']/g, function(c){
@@ -453,6 +455,44 @@ $("photoLightbox").onclick = function(e){
     $(id).classList.add("active");
   }
 
+  function createSessionId(){
+  if(window.crypto && window.crypto.randomUUID){
+    return window.crypto.randomUUID();
+  }
+
+  return Date.now().toString(36) + Math.random().toString(36).slice(2);
+}
+
+async function startSingleDeviceSession(user){
+  if(sessionStartedForUid === user.uid) return;
+
+  sessionStartedForUid = user.uid;
+  activeSessionId = createSessionId();
+
+  var sessionRef = doc(db, "activeSessions", user.uid);
+
+  try{
+    await setDoc(sessionRef, {
+      sessionId: activeSessionId,
+      updatedAt: new Date().toISOString()
+    });
+
+    if(stopSessionListener) stopSessionListener();
+
+    stopSessionListener = onSnapshot(sessionRef, function(snapshot){
+      var session = snapshot.data();
+
+      if(session && session.sessionId !== activeSessionId){
+        alert("This account was signed in on another device.");
+        signOut(auth);
+      }
+    });
+  }catch(e){
+    console.error(e);
+    sessionStartedForUid = null;
+    alert("Could not start the secure device session. Please try again.");
+  }
+}
   // ---------- auth ----------
   var loginBtn = $("loginBtn"), loginEmail = $("loginEmail"), loginPass = $("loginPass"), loginErr = $("loginErr");
   loginBtn.onclick = async function(){
@@ -471,10 +511,18 @@ $("photoLightbox").onclick = function(e){
     currentUser = user;
     if(user){
       $("whoLabel").textContent = user.email;
+      startSingleDeviceSession(user);
       show("homeScreen");
       startListening();
       initHuman();
     } else {
+      if(stopSessionListener){
+  stopSessionListener();
+  stopSessionListener = null;
+}
+
+activeSessionId = null;
+sessionStartedForUid = null;
       show("loginScreen");
     }
   });

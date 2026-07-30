@@ -1,0 +1,1465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>PRAU Intel</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.7.2/css/all.min.css">
+<style>
+  :root{
+    --bg:#0f0f0f; --panel:#181818; --panel2:#202020; --line:#3a3120;
+    --text:#ffffff; --dim:#aaaaaa; --gold:#D4AF37; --teal:#2dd4bf; --red:#ef5350;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;background:var(--bg);color:var(--text);
+    font-family:Arial,Helvetica,sans-serif;height:100%;overflow-x:hidden;}
+  #app{max-width:520px;margin:0 auto;min-height:100vh;display:flex;flex-direction:column;}
+  .screen{display:none;flex:1;flex-direction:column;}
+  .screen.active{display:flex;}
+
+  /* ---- login ---- */
+  #loginScreen{justify-content:center;align-items:center;padding:32px;gap:16px;}
+  .logo{width:150px;margin:0 auto 6px;display:block;}
+  h1{font-size:26px;margin:0;font-weight:800;color:var(--gold);text-align:center;}
+  .subtitle{color:var(--dim);font-size:13px;text-align:center;margin-bottom:6px;}
+  input[type=text],input[type=email],input[type=password],textarea{
+    width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    padding:13px 16px;border-radius:10px;font-size:15px;font-family:inherit;}
+  textarea{min-height:80px;resize:vertical;}
+  .primary-btn{width:100%;padding:14px;border:none;border-radius:10px;background:var(--gold);
+    color:#1a1400;font-weight:800;font-size:15px;cursor:pointer;}
+  .ghost-btn{width:100%;padding:14px;border:1px solid var(--line);border-radius:10px;background:transparent;
+    color:var(--text);font-weight:700;font-size:14px;cursor:pointer;}
+  .err{color:var(--red);font-size:13px;min-height:16px;text-align:center;}
+  .login-box{width:100%;max-width:340px;display:flex;flex-direction:column;gap:12px;}
+
+  /* ---- header (shared) ---- */
+  header{position:sticky;top:0;z-index:10;background:rgba(15,15,15,0.97);backdrop-filter:blur(6px);
+    padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:10px;}
+  .headrow{display:flex;align-items:center;gap:10px;justify-content:space-between;}
+  .headrow .titles{display:flex;flex-direction:column;}
+  .headrow h2{font-size:18px;margin:0;font-weight:800;}
+  .headrow .sub{font-size:11px;color:var(--dim);letter-spacing:1px;text-transform:uppercase;}
+  .iconbtn{background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    width:38px;height:38px;border-radius:9px;display:flex;align-items:center;justify-content:center;
+    font-size:16px;cursor:pointer;flex-shrink:0;}
+  .searchbar input{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);
+    padding:11px 14px;border-radius:9px;font-size:15px;}
+
+  /* ---- home ---- */
+  #homeScreen{padding:0 20px;justify-content:flex-start;}
+  .home-top{padding-top:26px;}
+  #homeSearch{padding:16px 18px;font-size:17px;border-radius:12px;margin:22px 0;}
+  #homeResults{margin-bottom:10px;}
+  .result-row{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:10px;margin-bottom:8px;cursor:pointer;}
+  .result-row img{width:46px;height:46px;border-radius:8px;object-fit:cover;object-position:top;background:var(--panel2);}
+  .result-row .rtype{font-size:10px;color:var(--gold);text-transform:uppercase;letter-spacing:1px;font-weight:700;}
+  .result-row .rname{font-weight:700;font-size:14px;}
+  .cards{display:grid;grid-template-columns:repeat(3, 1fr);gap:14px;margin-top:10px;}
+  .card{aspect-ratio:1;background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    display:flex;flex-direction:column;justify-content:center;align-items:center;cursor:pointer;}
+  .card i{font-size:32px;color:var(--gold);margin-bottom:10px;}
+  .card h3{margin:0;font-size:14px;font-weight:700;}
+  .footer{text-align:center;color:var(--dim);font-size:12px;padding:26px 0 16px;}
+  .footer a{color:var(--gold);text-decoration:none;font-weight:700;}
+
+  /* ---- list ---- */
+  main{flex:1;padding:14px 16px 100px;}
+  .empty{text-align:center;color:var(--dim);padding:60px 20px;font-size:14px;line-height:1.6;}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+  .item-card{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden;cursor:pointer;}
+  .item-card .thumb{width:100%;aspect-ratio:1;background:var(--panel2) top/cover no-repeat;
+    display:flex;align-items:center;justify-content:center;color:var(--dim);font-size:28px;}
+  .item-card .info{padding:9px 11px 11px;}
+  .item-card .name{font-weight:700;font-size:14px;margin-bottom:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .item-card .meta{font-size:11px;color:var(--dim);}
+
+  /* ---- fab ---- */
+  .fab-row{position:fixed;bottom:22px;left:0;right:0;display:flex;justify-content:center;gap:12px;z-index:20;}
+  .fab{padding:14px 22px;border-radius:999px;border:none;font-weight:800;font-size:14px;cursor:pointer;
+    display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,0.5);}
+  .fab.primary{background:var(--gold);color:#1a1400;}
+  .fab.ghost{background:var(--panel2);color:var(--text);border:1px solid var(--line);}
+
+  /* ---- sheet ---- */
+  .sheet-backdrop{position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:30;display:none;}
+  .sheet-backdrop.open{display:block;}
+  .sheet{position:fixed;left:0;right:0;bottom:0;max-width:520px;margin:0 auto;background:var(--bg);
+    border-radius:20px 20px 0 0;z-index:31;max-height:92vh;overflow-y:auto;display:none;
+    border-top:1px solid var(--line);padding-bottom:30px;}
+  .sheet.open{display:block;}
+  .sheet-head{position:sticky;top:0;background:var(--bg);padding:16px 18px 10px;display:flex;
+    justify-content:space-between;align-items:center;border-bottom:1px solid var(--line);}
+  .sheet-head h2{font-size:17px;margin:0;font-weight:800;}
+  .sheet-body{padding:16px 18px;}
+  label{display:block;font-size:11px;text-transform:uppercase;letter-spacing:1px;color:var(--dim);
+    margin:14px 0 6px;font-weight:700;}
+  label:first-child{margin-top:0;}
+  .photos-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;}
+  .photo-chip{position:relative;width:74px;height:74px;border-radius:10px;overflow:hidden;background:var(--panel2);}
+  .photo-chip img{width:100%;height:100%;object-fit:cover;}
+  .photo-chip .rm{position:absolute;top:2px;right:2px;background:rgba(0,0,0,0.7);color:#fff;
+    border:none;width:20px;height:20px;border-radius:50%;font-size:12px;cursor:pointer;line-height:1;}
+  .addphoto{width:74px;height:74px;border-radius:10px;border:1px dashed var(--line);background:transparent;
+    color:var(--dim);font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;}
+  .del-btn{width:100%;margin-top:10px;padding:14px;border:1px solid var(--red);border-radius:10px;
+    background:transparent;color:var(--red);font-weight:700;font-size:14px;cursor:pointer;}
+  .detail-photos{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px;}
+  .detail-photos img{width:120px;height:120px;object-fit:cover;border-radius:10px;flex-shrink:0;}
+  .detail-notes{margin-top:14px;font-size:14px;line-height:1.6;color:var(--text);white-space:pre-wrap;}
+  .detail-name{font-size:20px;font-weight:800;margin:14px 0 2px;}
+  .detail-added{font-size:12px;color:var(--dim);margin-bottom:6px;}
+  .scan-status{font-size:13px;color:var(--dim);text-align:center;padding:10px;background:var(--panel2);
+    border-radius:9px;margin-bottom:14px;line-height:1.5;}
+  .match-row{display:flex;gap:12px;align-items:center;background:var(--panel);border:1px solid var(--line);
+    border-radius:12px;padding:10px;margin-bottom:10px;}
+  .match-row img{width:56px;height:56px;border-radius:9px;object-fit:cover;object-position:top;}
+  .match-row .mname{font-weight:700;font-size:14px;}
+  .match-row .mscore{font-size:12px;color:var(--teal);font-weight:700;}
+  .hint{font-size:12px;color:var(--dim);text-align:center;margin-top:8px;line-height:1.5;}
+  input[type=file]{display:none;}
+  .internal-footer{position:fixed;left:0;right:0;bottom:0;text-align:center;font-size:10px;
+    letter-spacing:1px;text-transform:uppercase;color:var(--dim);padding:6px 0;
+    background:rgba(15,15,15,0.85);pointer-events:none;z-index:5;}
+  .photo-gallery{margin:0 0 16px;}
+.photo-gallery-head{display:flex;align-items:baseline;justify-content:space-between;margin:2px 0 8px;}
+.photo-gallery-title{font-size:12px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--dim);}
+.photo-gallery-count{font-size:11px;color:var(--gold);}
+.photo-gallery-row{display:flex;gap:10px;overflow-x:auto;padding:2px 2px 8px;scroll-snap-type:x proximity;-webkit-overflow-scrolling:touch;}
+.photo-gallery-item{width:78px;flex:0 0 78px;border:1px solid var(--line);border-radius:10px;overflow:hidden;background:var(--panel);padding:0;cursor:pointer;scroll-snap-align:start;color:var(--text);text-align:left;}
+.photo-gallery-item img{display:block;width:76px;height:76px;object-fit:cover;object-position:top;background:var(--panel2);}
+.photo-gallery-item span{display:block;padding:6px 7px;font:700 10px/1.2 Arial,Helvetica,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.photo-lightbox{
+  position:fixed;
+  inset:0;
+  z-index:100;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  padding:20px;
+  background:rgba(0,0,0,0.94);
+}
+.photo-lightbox.open{display:flex;}
+.photo-lightbox img{
+  max-width:100%;
+  max-height:100%;
+  object-fit:contain;
+  border-radius:8px;
+}
+.photo-lightbox-close{
+  position:absolute;
+  top:16px;
+  right:16px;
+  width:42px;
+  height:42px;
+  border:none;
+  border-radius:50%;
+  background:rgba(255,255,255,0.16);
+  color:#fff;
+  font-size:28px;
+  cursor:pointer;
+}
+.detail-photo-btn{
+  flex-shrink:0;
+  padding:0;
+  border:0;
+  background:transparent;
+  cursor:pointer;
+}
+.photo-lightbox-caption{
+  position:absolute;
+  left:20px;
+  right:20px;
+  bottom:24px;
+  color:#fff;
+  text-align:center;
+  font-size:16px;
+  font-weight:800;
+  text-shadow:0 2px 8px rgba(0,0,0,0.9);
+}
+
+  /* ---- bulk import ---- */
+  .bulk-summary{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:12px 14px;color:var(--dim);font-size:13px;line-height:1.5;margin-bottom:12px;}
+  .bulk-file-label{display:flex;align-items:center;justify-content:center;gap:8px;border:1px dashed var(--gold);border-radius:10px;padding:13px;background:rgba(212,175,55,.05);color:var(--gold);font-weight:800;cursor:pointer;margin-bottom:12px;}
+  .bulk-file-label input{display:none;}
+  .bulk-progress{height:6px;background:var(--panel2);border-radius:999px;overflow:hidden;margin:10px 0 12px;}
+  .bulk-progress div{height:100%;width:0;background:var(--gold);transition:width .2s ease;}
+  .bulk-toolbar{display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:8px;margin-bottom:10px;}
+  .bulk-toolbar .ghost-btn,.bulk-toolbar .primary-btn{width:100%;padding:11px 8px;font-size:12px;}
+  #bulkSearch{margin-bottom:10px;}
+  .bulk-row{display:grid;grid-template-columns:26px minmax(72px,150px) 1fr;gap:10px;align-items:start;background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:10px;margin-bottom:10px;}
+  .bulk-check{width:18px;height:18px;margin-top:4px;accent-color:var(--gold);}
+  .bulk-photos{display:flex;gap:6px;align-items:center;flex-wrap:wrap;min-width:72px;}
+  .bulk-photo-btn{width:58px;height:58px;padding:0;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:var(--panel2);cursor:pointer;flex:0 0 58px;}
+  .bulk-photo-btn img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;}
+  .bulk-thumb{width:58px;height:58px;border-radius:8px;background:var(--panel2);color:var(--dim);display:block;}
+  .bulk-thumb-empty{display:flex;align-items:center;justify-content:center;font-size:24px;}
+  .bulk-photo-more{min-width:32px;height:32px;padding:0 6px;border-radius:16px;background:var(--panel2);border:1px solid var(--line);color:var(--gold);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;}
+  .bulk-photo-error{opacity:.45;}
+  .bulk-main{min-width:0;}
+  .bulk-name{font-weight:800;font-size:14px;margin-bottom:4px;line-height:1.35;}
+  .bulk-meta{font-size:11px;color:var(--dim);margin-bottom:6px;line-height:1.4;}
+  .bulk-note{font-size:12px;line-height:1.45;color:var(--text);white-space:pre-wrap;max-height:110px;overflow:auto;}
+  .bulk-badge{display:inline-block;margin-left:6px;padding:2px 6px;border-radius:999px;font-size:9px;text-transform:uppercase;letter-spacing:.6px;vertical-align:middle;}
+  .bulk-badge.review{background:rgba(239,83,80,.15);color:#ef5350;border:1px solid rgba(239,83,80,.4);}
+  .bulk-badge.duplicate{background:rgba(212,175,55,.12);color:var(--gold);border:1px solid rgba(212,175,55,.35);}
+  @media (max-width:560px){
+    .bulk-row{grid-template-columns:24px minmax(70px,118px) 1fr;gap:8px;padding:8px;}
+    .bulk-photo-btn,.bulk-thumb{width:52px;height:52px;flex-basis:52px;}
+    .bulk-name{font-size:13px;}
+    .bulk-note{max-height:95px;font-size:11px;}
+    .bulk-toolbar{grid-template-columns:1fr 1fr;}
+    .bulk-toolbar .primary-btn{grid-column:1 / -1;}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- LOGIN -->
+   <div class="screen active" id="loginScreen">
+    <div class="login-box">
+      <img src="assets/logo.svg" class="logo" onerror="this.style.display='none'">
+      <h1>PRAU Intel</h1>
+      <div class="subtitle">Sign in with your team account</div>
+      <input type="email" id="loginEmail" placeholder="Email">
+      <input type="password" id="loginPass" placeholder="Password">
+      <button class="primary-btn" id="loginBtn">Sign in</button>
+      <div class="err" id="loginErr"></div>
+      <div class="hint">Accounts are created by PRAU Security — there's no public sign-up.</div>
+    </div>
+  </div>
+
+  <!-- HOME -->
+  <div class="screen" id="homeScreen">
+    <div class="home-top">
+      <img src="assets/logo.svg" class="logo" onerror="this.style.display='none'">
+      <h1>PRAU Intel</h1>
+      <div class="subtitle">Professional Intelligence Platform</div>
+      <input type="text" id="homeSearch" placeholder="Search people or vehicles…">
+      <div id="homeResults"></div>
+      <div class="cards">
+        <div class="card" id="peopleCard"><i class="fa-solid fa-user-secret"></i><h3>People</h3></div>
+        <div class="card" id="vehicleCard"><i class="fa-solid fa-car-side"></i><h3>Vehicles</h3></div>
+        <div class="card" id="recentCard"><i class="fa-solid fa-clock-rotate-left"></i><h3>Recent</h3></div>
+      </div>
+      <button class="fab ghost admin-import-btn" id="bulkImportBtn"><i class="fa-solid fa-file-import"></i> Bulk Import</button>
+      <div class="footer">Logged in as <span id="whoLabel">—</span><br><a href="#" id="logoutLink">Sign out</a></div>
+    </div>
+  </div>
+
+  <!-- PEOPLE -->
+  <div class="screen" id="peopleScreen">
+    <header>
+      <div class="headrow">
+        <button class="iconbtn" id="peopleBack">←</button>
+        <div class="titles"><h2>People</h2><div class="sub" id="peopleCount">0 on file</div></div>
+        <div style="width:38px;"></div>
+      </div>
+      <div class="searchbar"><input type="text" id="peopleSearch" placeholder="Search by name…"></div>
+    </header>
+    <main>
+  <div class="photo-gallery" id="peoplePhotoGallery" style="display:none;">
+    <div class="photo-gallery-head">
+      <div class="photo-gallery-title">Photos on file</div>
+      <div class="photo-gallery-count" id="peoplePhotoCount"></div>
+    </div>
+
+    <div class="photo-gallery-row" id="peoplePhotoRow"></div>
+  </div>
+
+  <div id="peopleList"></div>
+</main>
+    <div class="fab-row" id="peopleFabs">
+      <button class="fab ghost" id="scanBtn">🔎 Match photo</button>
+      <button class="fab primary" id="addPersonBtn">＋ Add Person</button>
+    </div>
+  </div>
+
+  <!-- VEHICLES -->
+  <div class="screen" id="vehicleScreen">
+    <header>
+      <div class="headrow">
+        <button class="iconbtn" id="vehicleBack">←</button>
+        <div class="titles"><h2>Vehicles</h2><div class="sub" id="vehicleCount">0 on file</div></div>
+        <div style="width:38px;"></div>
+      </div>
+      <div class="searchbar"><input type="text" id="vehicleSearch" placeholder="Search by make, model, plate…"></div>
+    </header>
+    <main><div id="vehicleList"></div></main>
+    <div class="fab-row">
+      <button class="fab primary" id="addVehicleBtn">＋ Add vehicle</button>
+    </div>
+  </div>
+
+  <!-- RECENT -->
+  <div class="screen" id="recentScreen">
+    <header>
+      <div class="headrow">
+        <button class="iconbtn" id="recentBack">←</button>
+        <div class="titles"><h2>Recent</h2><div class="sub">Latest additions, both lists</div></div>
+        <div style="width:38px;"></div>
+      </div>
+    </header>
+    <main><div id="recentList"></div></main>
+  </div>
+
+  <!-- BULK IMPORT -->
+  <div class="screen" id="bulkImportScreen">
+    <header>
+      <div class="headrow">
+        <button class="iconbtn" id="bulkImportBack">←</button>
+        <div class="titles"><h2>Bulk Import</h2><div class="sub">WhatsApp staging</div></div>
+        <div style="width:38px;"></div>
+      </div>
+    </header>
+    <main>
+      <div class="bulk-summary">
+        Upload the PRAU import package. Nothing is added to Firebase until you review the proposed people and tap <b>Import Selected</b>. Unmatched or uncertain entries are flagged for review.
+      </div>
+      <label class="bulk-file-label" for="bulkPackageFile"><i class="fa-solid fa-file-zipper"></i> Choose import ZIP<input type="file" id="bulkPackageFile" accept=".zip,application/zip"></label>
+      <div class="bulk-progress" id="bulkProgressWrap" style="display:none;"><div id="bulkProgressBar"></div></div>
+      <div class="bulk-summary" id="bulkSummary" style="display:none;"></div>
+      <div class="bulk-toolbar" id="bulkToolbar" style="display:none;">
+        <button class="ghost-btn" id="bulkSelectAll">Select all</button>
+        <button class="ghost-btn" id="bulkClearAll">Clear</button>
+        <button class="primary-btn" id="bulkImportSelected">Import Selected</button>
+      </div>
+      <input type="text" id="bulkSearch" placeholder="Filter proposed people…" style="display:none;">
+      <div id="bulkReviewList"></div>
+      <div class="hint" id="bulkStatus"></div>
+    </main>
+  </div>
+
+</div>
+
+<!-- Person form sheet -->
+<div class="sheet-backdrop" id="personFormBackdrop"></div>
+<div class="sheet" id="personFormSheet">
+  <div class="sheet-head"><h2 id="personFormTitle">Add Person</h2><button class="iconbtn" id="personFormClose">✕</button></div>
+  <div class="sheet-body">
+    <label>Name and surname</label>
+    <input type="text" id="pName" placeholder="e.g. John Doe">
+    <label>Date of birth / ID number</label>
+    <input type="text" id="pDob" placeholder="e.g. 12/04/1990 or ID number">
+    <label>Birth origin</label>
+    <input type="text" id="pOrigin" placeholder="e.g. Town, country of birth">
+    <label>Current address / location</label>
+    <input type="text" id="pAddress" placeholder="Where this person is known to live/stay">
+    <label>Previous arrest info (if applicable)</label>
+    <textarea id="pArrest" placeholder="Prior incidents, charges, outcomes"></textarea>
+    <label>Deceased</label>
+
+<div style="display:flex;align-items:center;gap:10px;">
+    <input type="checkbox" id="pDeceased" style="width:20px;height:20px;">
+    <span>Person is deceased</span>
+</div>
+    <label>Items found on suspect</label>
+    <textarea id="pItems" placeholder="e.g. knife, stolen goods, ID documents"></textarea>
+    <label>Location of profiling</label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="pProfileLoc" placeholder="Where this profiling took place" style="flex:1;">
+      <button class="iconbtn" id="pUseGpsBtn">📍</button>
+    </div>
+    <div class="hint" id="pGpsStatus" style="text-align:left;margin-top:6px;"></div>
+    <label>Additional notes</label>
+    <textarea id="pNotes" placeholder="Anything else worth recording"></textarea>
+<label>Photo / profiling date</label>
+<input type="date" id="pPhotoDate">
+<label>Image by</label>
+<input type="text" id="pImageBy" placeholder="Enter name">
+<label>Photos</label>
+<div class="photos-row" id="pPhotosRow"><button class="addphoto" id="pAddPhotoBtn">＋</button></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <label class="fab ghost" for="pImportFile" style="flex:1;justify-content:center;margin:0;">🖼 Import from gallery</label>
+    </div>
+    <div class="hint" id="pImportStatus" style="text-align:left;margin-top:6px;"></div>
+    <input type="file" id="pPhotoFile" accept="image/*">
+    <input type="file" id="pImportFile" accept="image/*" multiple>
+    <button class="primary-btn" id="pSaveBtn" style="margin-top:20px;">Save record</button>
+    <button class="del-btn" id="pDeleteBtn" style="display:none;">Delete this record</button>
+  </div>
+</div>
+
+<!-- Person detail sheet -->
+<div class="sheet-backdrop" id="personDetailBackdrop"></div>
+<div class="sheet" id="personDetailSheet">
+  <div class="sheet-head"><h2>Record</h2><button class="iconbtn" id="personDetailClose">✕</button></div>
+  <div class="sheet-body" id="personDetailBody"></div>
+</div>
+
+<!-- Vehicle form sheet -->
+<div class="sheet-backdrop" id="vehicleFormBackdrop"></div>
+<div class="sheet" id="vehicleFormSheet">
+  <div class="sheet-head"><h2 id="vehicleFormTitle">Add vehicle</h2><button class="iconbtn" id="vehicleFormClose">✕</button></div>
+  <div class="sheet-body">
+    <label>Make</label>
+    <input type="text" id="vMake" placeholder="e.g. Toyota">
+    <label>Model</label>
+    <input type="text" id="vModel" placeholder="e.g. Hilux">
+    <label>Colour</label>
+    <input type="text" id="vColor" placeholder="e.g. White">
+    <label>Registration / plate number</label>
+    <input type="text" id="vPlate" placeholder="e.g. CA 123-456">
+    <button type="button" class="ghost-btn" id="vScanPlateBtn" style="margin-top:8px;">
+    <i class="fa-solid fa-camera"></i>
+    Scan plate from photo
+</button>
+
+<div class="hint" id="vPlateScanStatus" style="text-align:left;margin-top:8px;">Choose an existing vehicle photo to scan the plate.</div>
+
+<input type="file" id="vPlateScanFile" accept="image/*">
+    <label>Owner / driver</label>
+    <input type="text" id="vOwner" placeholder="Name, or link to a suspect record">
+    <label>Notes</label>
+    <textarea id="vNotes" placeholder="Anything worth recording"></textarea>
+    <label>Location of profiling</label>
+    <div style="display:flex;gap:8px;">
+      <input type="text" id="vProfileLoc" placeholder="Where this vehicle was seen/profiled" style="flex:1;">
+      <button class="iconbtn" id="vUseGpsBtn">📍</button>
+    </div>
+    <div class="hint" id="vGpsStatus" style="text-align:left;margin-top:6px;"></div>
+    <label>Photos</label>
+    <div class="photos-row" id="vPhotosRow"><button class="addphoto" id="vAddPhotoBtn">＋</button></div>
+    <div style="display:flex;gap:8px;margin-top:8px;">
+      <label class="fab ghost" for="vImportFile" style="flex:1;justify-content:center;margin:0;">🖼 Import from gallery</label>
+    </div>
+    <div class="hint" id="vImportStatus" style="text-align:left;margin-top:6px;"></div>
+    <input type="file" id="vPhotoFile" accept="image/*">
+    <input type="file" id="vImportFile" accept="image/*" multiple>
+    <button class="primary-btn" id="vSaveBtn" style="margin-top:20px;">Save record</button>
+    <button class="del-btn" id="vDeleteBtn" style="display:none;">Delete this record</button>
+  </div>
+</div>
+
+<!-- Vehicle detail sheet -->
+<div class="sheet-backdrop" id="vehicleDetailBackdrop"></div>
+<div class="sheet" id="vehicleDetailSheet">
+  <div class="sheet-head"><h2>Record</h2><button class="iconbtn" id="vehicleDetailClose">✕</button></div>
+  <div class="sheet-body" id="vehicleDetailBody"></div>
+</div>
+
+<!-- Scan sheet (People only) -->
+<div class="sheet-backdrop" id="scanBackdrop"></div>
+<div class="sheet" id="scanSheet">
+  <div class="sheet-head"><h2>Match a photo</h2><button class="iconbtn" id="scanClose">✕</button></div>
+  <div class="sheet-body">
+    <div class="scan-status" id="scanStatus">Loading matching engine…</div>
+    <button class="primary-btn" id="scanTakeBtn">📷 Take / choose photo</button>
+    <input type="file" id="scanFile" accept="image/*" capture="environment">
+    <div id="scanResults" style="margin-top:16px;"></div>
+    <div class="hint">If a photo doesn't produce a confident match, use search instead — this feature is experimental.</div>
+  </div>
+</div>
+<div class="photo-lightbox" id="photoLightbox">
+  <button class="photo-lightbox-close" id="photoLightboxClose" type="button">×</button>
+  <img id="photoLightboxImage" alt="Full-size photo">
+  <div class="photo-lightbox-caption" id="photoLightboxCaption"></div>
+</div>
+  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/human/3.3.6/human.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+import {
+  initializeFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, setDoc, query, orderBy
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+import {
+  getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
+} from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBlTKFQWEzBbcSi0rm5RgC5uKSAYVwLukk",
+  authDomain: "prau-profiling-67d34.firebaseapp.com",
+  projectId: "prau-profiling-67d34",
+  storageBucket: "prau-profiling-67d34.firebasestorage.app",
+  messagingSenderId: "405888273288",
+  appId: "1:405888273288:web:b612d63506ec7de958c83d"
+};
+const fbApp = initializeApp(firebaseConfig);
+const db = initializeFirestore(fbApp, { experimentalAutoDetectLongPolling: true, useFetchStreams: false });
+const auth = getAuth(fbApp);
+const suspectsCol = collection(db, "suspects");
+const vehiclesCol = collection(db, "vehicles");
+
+(function(){
+  "use strict";
+
+  var suspects = [];
+  var vehicles = [];
+  var humanInstance = null;
+  var modelsReady = false;
+  var listening = false;
+  var currentUser = null;
+  
+
+  function escapeHtml(s){
+    return (s||"").replace(/[&<>"']/g, function(c){
+      return {"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c];
+    });
+  }
+  function $(id){ return document.getElementById(id); }
+ function openPhotoLightbox(src, name, profiledAt){
+  var dateText = "";
+
+  if(profiledAt){
+    dateText = " · Profiled: " +
+      new Date(profiledAt + "T00:00:00").toLocaleDateString(
+        "en-ZA",
+        { day:"numeric", month:"long", year:"numeric" }
+      );
+  }
+
+  $("photoLightboxImage").src = src;
+  $("photoLightboxImage").alt = name ? "Photo of " + name : "Full-size photo";
+  $("photoLightboxCaption").textContent = (name || "") + dateText;
+  $("photoLightbox").classList.add("open");
+}
+
+function closePhotoLightbox(){
+  $("photoLightbox").classList.remove("open");
+  $("photoLightboxImage").src = "";
+}
+
+$("photoLightboxClose").onclick = closePhotoLightbox;
+
+$("photoLightbox").onclick = function(e){
+  if(e.target === $("photoLightbox")){
+    closePhotoLightbox();
+  }
+};
+  function show(id){
+    Array.prototype.forEach.call(document.querySelectorAll(".screen"), function(s){ s.classList.remove("active"); });
+    $(id).classList.add("active");
+  }
+
+ 
+  // ---------- auth ----------
+  var loginBtn = $("loginBtn"), loginEmail = $("loginEmail"), loginPass = $("loginPass"), loginErr = $("loginErr");
+  loginBtn.onclick = async function(){
+    loginErr.textContent = "";
+    loginBtn.textContent = "Signing in…"; loginBtn.disabled = true;
+    try{
+      await signInWithEmailAndPassword(auth, loginEmail.value.trim(), loginPass.value);
+    }catch(e){
+      loginErr.textContent = "Access Denied";
+    }
+    loginBtn.textContent = "Sign in"; loginBtn.disabled = false;
+  };
+  $("logoutLink").onclick = function(e){ e.preventDefault(); signOut(auth); };
+
+ var mySessionId = localStorage.getItem("prauDeviceId");
+
+if(!mySessionId){
+    mySessionId = (crypto && crypto.randomUUID)
+        ? crypto.randomUUID()
+        : (Date.now() + "-" + Math.random().toString(36).slice(2));
+
+    localStorage.setItem("prauDeviceId", mySessionId);
+}
+
+var sessionUnsub = null;
+
+  onAuthStateChanged(auth, function(user){
+    currentUser = user;
+    if(user){
+      $("whoLabel").textContent = user.email;
+      show("homeScreen");
+      startListening();
+      initHuman();
+      startSessionGuard(user);
+    } else {
+      show("loginScreen");
+      if(sessionUnsub){ sessionUnsub(); sessionUnsub = null; }
+    }
+  });
+
+  async function startSessionGuard(user){
+    var sessionDoc = doc(db, "sessions", user.uid);
+    try{
+      await setDoc(sessionDoc, { sessionId: mySessionId, device: navigator.userAgent, at: new Date().toISOString() });
+    }catch(e){ console.error("session guard write failed", e); }
+    if(sessionUnsub){ sessionUnsub(); }
+    sessionUnsub = onSnapshot(sessionDoc, function(snap){
+      var data = snap.data();
+      if(data && data.sessionId && data.sessionId !== mySessionId){
+        alert("You've been signed out because this account was used to sign in on another device.");
+        signOut(auth);
+      }
+    });
+  }
+
+  // ---------- firestore listeners ----------
+  function startListening(){
+    if(listening) return;
+    listening = true;
+    onSnapshot(query(suspectsCol, orderBy("addedAt","asc")), function(snap){
+      suspects = snap.docs.map(function(d){ var v=d.data(); v.id=d.id; return v; });
+      renderPeopleList(); renderRecent();
+    });
+    onSnapshot(query(vehiclesCol, orderBy("addedAt","asc")), function(snap){
+      vehicles = snap.docs.map(function(d){ var v=d.data(); v.id=d.id; return v; });
+      renderVehicleList(); renderRecent();
+    });
+  }
+
+
+  // ---------- bulk import ----------
+  // TEST MODE is enabled so you can test the importer before we lock it to Jono and Raven.
+  // Set BULK_IMPORT_TEST_MODE to false once the admin email addresses are entered.
+  var BULK_IMPORT_TEST_MODE = true;
+  var ADMIN_EMAILS = [/* add Jono and Raven Firebase login emails here */];
+  var bulkPackage = null;
+  var bulkRecords = [];
+
+  function isBulkImportAdmin(){
+    if(BULK_IMPORT_TEST_MODE) return true;
+    var email = (currentUser && currentUser.email ? currentUser.email : "").toLowerCase();
+    return ADMIN_EMAILS.map(function(x){ return String(x||"").toLowerCase(); }).indexOf(email) !== -1;
+  }
+
+  function refreshBulkImportButton(){
+    var btn = $("bulkImportBtn");
+    if(btn) btn.style.display = isBulkImportAdmin() ? "flex" : "none";
+  }
+
+  function normName(s){
+    return String(s||"").toLowerCase().replace(/[^a-z0-9]+/g," ").trim();
+  }
+
+  function guessName(raw){
+    var s = String(raw||"").replace(/\s+/g," ").trim();
+    s = s.replace(/^\d{1,2}[./]\d{1,2}[./]\d{2,4}\s*/i, "");
+    var m = s.match(/^([A-Z][A-Za-zÀ-ÿ'’\-]+(?:\s+[A-Z][A-Za-zÀ-ÿ'’\-]+){1,3})\s*(?:,|D\.?\s*O\.?\s*B\.?|DOB|\d{1,2}[./]\d{1,2}[./]\d{4})/i);
+    return m ? m[1].trim() : "";
+  }
+
+  function guessDob(s){
+    var m = String(s||"").match(/(?:D\.?\s*O\.?\s*B\.?|DOB|date of birth)[^0-9]{0,6}(\d{1,2}[./]\d{1,2}[./]\d{4})/i);
+    if(m) return m[1];
+    var m2 = String(s||"").match(/\b(\d{1,2}[./]\d{1,2}[./]\d{4})\b/);
+    return m2 ? m2[1] : "";
+  }
+
+  function guessAlias(s){
+    var m = String(s||"").match(/\b[A-Z][A-Za-z'’\-]+(?:\s+[A-Z][A-Za-z'’\-]+)?\s*\(([^)]+)\)/);
+    return m ? m[1].trim() : "";
+  }
+
+  function guessAddress(s){
+    var m = String(s||"").match(/(?:currently\s+(?:living|staying)|living|staying|sleeping)\s+(?:in|at|on)\s+([^.;]+)|\b(\d{1,5}\s+[A-Za-z0-9'’\- ]{3,60}(?:Road|Rd|Street|St|Avenue|Ave|Way|Drive|Dr|Road|Close|Lane|Ln)?)\b/i);
+    return m ? (m[1]||m[2]||"").trim() : "";
+  }
+
+  function guessArrests(s){
+    var parts = String(s||"").split(/(?<=[.!?])\s+/);
+    var hits = parts.filter(function(x){ return /\b(arrested|arrest|served\s+time|polsmoor|prison|jail|charged|case\s+dismissed|sentence)\b/i.test(x); });
+    return hits.join(" ").trim();
+  }
+
+  function guessProfileDate(raw, timestamp){
+    var m = String(raw||"").match(/\b(\d{1,2}[./]\d{1,2}[./]\d{4})\b/);
+    if(m){
+      var p = m[1].split(/[./]/); return p[2]+"-"+String(p[1]).padStart(2,"0")+"-"+String(p[0]).padStart(2,"0");
+    }
+    var t = String(timestamp||"").split(",")[0].trim();
+    var mm = t.match(/^(\d{4})\/(\d{2})\/(\d{2})$/);
+    return mm ? mm[1]+"-"+mm[2]+"-"+mm[3] : "";
+  }
+
+  function parseReviewCsv(text){
+    // Native CSV parser so the importer does not depend on Papa Parse/CDN availability.
+    return new Promise(function(resolve,reject){
+      try{
+        var rows=[]; var row=[]; var field=''; var quoted=false;
+        for(var i=0;i<text.length;i++){
+          var ch=text[i];
+          if(quoted){
+            if(ch==='"'){
+              if(text[i+1]==='"'){ field+='"'; i++; }
+              else { quoted=false; }
+            }else{ field+=ch; }
+          }else{
+            if(ch==='"'){ quoted=true; }
+            else if(ch===','){ row.push(field); field=''; }
+            else if(ch==='\n'){ row.push(field); rows.push(row); row=[]; field=''; }
+            else if(ch==='\r'){
+              if(text[i+1]==='\n') i++;
+              row.push(field); rows.push(row); row=[]; field='';
+            }else{ field+=ch; }
+          }
+        }
+        if(quoted) throw new Error('CSV contains an unmatched quote.');
+        if(field!=='' || row.length){ row.push(field); rows.push(row); }
+        if(!rows.length){ resolve([]); return; }
+        var headers=rows.shift().map(function(h){ return String(h||'').replace(/^\uFEFF/,'').trim(); });
+        var data=rows.filter(function(r){ return r.some(function(v){ return String(v||'').trim()!==''; }); }).map(function(r){
+          var obj={}; headers.forEach(function(h,idx){ obj[h]=idx<r.length ? r[idx] : ''; }); return obj;
+        });
+        resolve(data);
+      }catch(e){ reject(e); }
+    });
+  }
+
+  function parseBulkRows(rows){
+    var groups = {};
+    rows.forEach(function(row, idx){
+      var raw = String(row.raw_text||"").trim();
+      var name = String(row.candidate_name||"").trim() || guessName(raw);
+      var key = normName(name);
+      if(!key) key = "__review__"+idx;
+      if(!groups[key]) groups[key] = {key:key,name:name||"Needs review",rows:[],attachments:[],needsReview:!name};
+      groups[key].rows.push(row);
+      if(row.attachment) groups[key].attachments.push(row.attachment);
+      if(!groups[key].name && name) groups[key].name=name;
+      if(name) groups[key].needsReview=false;
+    });
+    return Object.keys(groups).map(function(k){
+      var g=groups[k], texts=g.rows.map(function(r){return String(r.raw_text||"").trim();}).filter(Boolean);
+      var first=texts[0]||"";
+      var dob=(g.rows.map(function(r){return String(r.dob_id||"").trim();}).find(Boolean)||guessDob(first));
+      var alias=texts.map(guessAlias).find(Boolean)||"";
+      var address=texts.map(guessAddress).find(Boolean)||"";
+      var arrests=texts.map(guessArrests).filter(Boolean).join(" ");
+      var profDate=texts.map(function(x,i){return guessProfileDate(x,g.rows[i].timestamp);}).find(Boolean)||"";
+      var sender=(g.rows.map(function(r){return String(r.sender||"").trim();}).find(Boolean)||"");
+      return {key:k,name:g.name,dob:dob,alias:alias,address:address,arrests:arrests,notes:texts.join("\n\n"),attachments:Array.from(new Set(g.attachments)),profiledAt:profDate,sender:sender,needsReview:g.needsReview,existing:false,selected:!g.needsReview};
+    });
+  }
+
+  async function readZipEntryText(zip,name){
+    var entry=zip.file(name); if(!entry) return ""; return await entry.async("string");
+  }
+
+  async function loadBulkPackage(file){
+    $("bulkStatus").textContent="Reading ZIP…";
+    $("bulkProgressWrap").style.display="block"; $("bulkProgressBar").style.width="5%";
+    var zip=await JSZip.loadAsync(file);
+    var csvName=Object.keys(zip.files).find(function(n){return /prau_whatsapp_import_review\.csv$/i.test(n);});
+    if(!csvName) throw new Error("This ZIP does not contain prau_whatsapp_import_review.csv");
+    var csvText=await readZipEntryText(zip,csvName);
+    var rows=await parseReviewCsv(csvText);
+    bulkPackage=zip;
+    bulkRecords=parseBulkRows(rows);
+    var existingNames={};
+    suspects.forEach(function(r){ existingNames[normName(r.name)]=true; });
+    bulkRecords.forEach(function(r){ r.existing=!!existingNames[r.key] && r.key.indexOf("__review__")!==0; });
+    $("bulkProgressBar").style.width="20%";
+    renderBulkReview();
+  }
+
+  function renderBulkReview(){
+    var list=$("bulkReviewList"), q=($("bulkSearch").value||"").trim().toLowerCase();
+    var shown=bulkRecords.filter(function(r){return !q || (r.name+" "+r.notes).toLowerCase().indexOf(q)!==-1;});
+    $("bulkToolbar").style.display=bulkRecords.length?"flex":"none";
+    $("bulkSearch").style.display=bulkRecords.length?"block":"none";
+    var reviewCount=bulkRecords.filter(function(r){return r.needsReview;}).length;
+    var dupCount=bulkRecords.filter(function(r){return r.existing;}).length;
+    $("bulkSummary").style.display=bulkRecords.length?"block":"none";
+    if(bulkRecords.length) $("bulkSummary").innerHTML=bulkRecords.length+" proposed people · "+reviewCount+" need review · "+dupCount+" already exist · "+bulkRecords.filter(function(r){return r.attachments.length;}).length+" have photos";
+    if(!shown.length){ list.innerHTML='<div class="empty">No proposed records match your filter.</div>'; return; }
+    list.innerHTML=shown.map(function(r){
+      var badges=(r.needsReview?'<span class="bulk-badge review">Review</span>':'')+(r.existing?'<span class="bulk-badge duplicate">Existing</span>':'');
+      var photoButtons="";
+      var maxThumbs=Math.min(r.attachments.length,6);
+      for(var pi=0;pi<maxThumbs;pi++){
+        var mediaName=r.attachments[pi];
+        var f=Object.keys(bulkPackage.files).find(function(n){return ('media/'+mediaName)===n;});
+        if(f){
+          photoButtons += '<button type="button" class="bulk-photo-btn" data-preview-file="'+f.replace(/"/g,'&quot;')+'" data-photo-name="'+escapeHtml(r.name)+'" data-photo-date="'+escapeHtml(r.profiledAt||'')+'">' +
+            '<img class="bulk-thumb" alt="">' +
+          '</button>';
+        }
+      }
+      if(!photoButtons){
+        photoButtons='<div class="bulk-thumb bulk-thumb-empty">👤</div>';
+      } else if(r.attachments.length>maxThumbs){
+        photoButtons += '<div class="bulk-photo-more">+'+(r.attachments.length-maxThumbs)+'</div>';
+      }
+      return '<div class="bulk-row"><input type="checkbox" class="bulk-check" data-key="'+escapeHtml(r.key)+'" '+(r.selected?'checked':'')+'><div class="bulk-photos">'+photoButtons+'</div><div class="bulk-main"><div class="bulk-name">'+escapeHtml(r.name)+' '+badges+'</div><div class="bulk-meta">DOB/ID: '+escapeHtml(r.dob||'—')+' · Photos: '+r.attachments.length+' · '+escapeHtml(r.profiledAt||'date unknown')+'</div><div class="bulk-note">'+escapeHtml(r.notes||'')+'</div></div></div>';
+    }).join("");
+
+    Array.prototype.forEach.call(list.querySelectorAll(".bulk-check"),function(el){el.onchange=function(){var r=bulkRecords.find(function(x){return x.key===el.getAttribute('data-key');}); if(r) r.selected=el.checked;};});
+
+    Array.prototype.forEach.call(list.querySelectorAll(".bulk-photo-btn"),async function(btn){
+      var fileName=btn.getAttribute("data-preview-file");
+      try{
+        var entry=bulkPackage.file(fileName);
+        if(!entry) return;
+        var blob=await entry.async("blob");
+        var url=URL.createObjectURL(blob);
+        var img=btn.querySelector("img");
+        if(img) img.src=url;
+        btn.onclick=function(){
+          var name=btn.getAttribute("data-photo-name")||"WhatsApp photo";
+          var prof=btn.getAttribute("data-photo-date")||"";
+          openPhotoLightbox(url,name,prof);
+        };
+      }catch(e){
+        btn.classList.add("bulk-photo-error");
+      }
+    });
+  }
+
+  async function compressZipImage(zip,name){
+    var entry=zip.file(name); if(!entry) return null;
+    var blob=await entry.async("blob");
+    return await new Promise(function(resolve,reject){
+      var img=new Image(), reader=new FileReader();
+      reader.onload=function(e){img.onload=function(){
+        var maxDim=480, scale=Math.min(1,maxDim/Math.max(img.width,img.height));
+        var c=document.createElement('canvas'); c.width=Math.max(1,Math.round(img.width*scale)); c.height=Math.max(1,Math.round(img.height*scale));
+        c.getContext('2d').drawImage(img,0,0,c.width,c.height); resolve(c.toDataURL('image/jpeg',0.65));
+      }; img.onerror=reject; img.src=e.target.result;}; reader.onerror=reject; reader.readAsDataURL(blob);
+    });
+  }
+
+  async function importSelectedBulk(){
+    var selected=bulkRecords.filter(function(r){return r.selected;});
+    if(!selected.length){ alert("Select at least one proposed person."); return; }
+    var progressWrap=$("bulkProgressWrap"), bar=$("bulkProgressBar"); progressWrap.style.display='block';
+    $("bulkImportSelected").disabled=true;
+    for(var i=0;i<selected.length;i++){
+      var r=selected[i];
+      try{
+        var photos=[];
+        for(var j=0;j<r.attachments.length;j++){
+          var n='media/'+r.attachments[j];
+          if(bulkPackage.file(n)){
+            var dataUrl=await compressZipImage(bulkPackage,n);
+            if(dataUrl) photos.push({dataUrl:dataUrl,profiledAt:r.profiledAt||''});
+          }
+          bar.style.width=Math.round(((i+j/Math.max(1,r.attachments.length))/selected.length)*100)+'%';
+        }
+        var fields={
+          name:r.name,
+          nickname:r.alias||"",
+          dob:r.dob||"",
+          address:r.address||"",
+          arrestInfo:r.arrests||"",
+          profileLoc:"",
+          profileCoords:null,
+          details:r.notes||"",
+          photos:photos,
+          addedBy:currentUser?currentUser.email:"unknown",
+          importSource:"WhatsApp",
+          importSender:r.sender||""
+        };
+        fields.addedAt=new Date().toISOString();
+        await addDoc(suspectsCol,fields);
+      }catch(e){ console.error('Import failed for',r.name,e); }
+    }
+    bar.style.width='100%';
+    $("bulkStatus").textContent=selected.length+" records submitted for import. Review the People list before using them operationally.";
+    $("bulkImportSelected").disabled=false;
+    startListening();
+  }
+
+  $("bulkImportBtn").onclick=function(){ if(!isBulkImportAdmin()) return; show('bulkImportScreen'); };
+  $("bulkImportBack").onclick=function(){ show('homeScreen'); };
+  $("bulkPackageFile").onchange=async function(){
+    var file=this.files[0]; if(!file) return;
+    try{ await loadBulkPackage(file); }catch(e){ console.error(e); $("bulkStatus").textContent="Import package could not be read: "+e.message; }
+  };
+  $("bulkSearch").oninput=renderBulkReview;
+  $("bulkSelectAll").onclick=function(){bulkRecords.forEach(function(r){r.selected=true;});renderBulkReview();};
+  $("bulkClearAll").onclick=function(){bulkRecords.forEach(function(r){r.selected=false;});renderBulkReview();};
+  $("bulkImportSelected").onclick=importSelectedBulk;
+
+  // ---------- navigation ----------
+  $("peopleCard").onclick = function(){ show("peopleScreen"); };
+  $("vehicleCard").onclick = function(){ show("vehicleScreen"); };
+  $("recentCard").onclick = function(){ show("recentScreen"); renderRecent(); };
+  $("peopleBack").onclick = function(){ show("homeScreen"); };
+  $("vehicleBack").onclick = function(){ show("homeScreen"); };
+  $("recentBack").onclick = function(){ show("homeScreen"); };
+
+  // ---------- home search (unified) ----------
+  $("homeSearch").oninput = function(){
+    var q = this.value.trim().toLowerCase();
+    var box = $("homeResults");
+    if(!q){ box.innerHTML = ""; return; }
+    var pMatches = suspects.filter(function(r){ return (r.name||"").toLowerCase().indexOf(q) !== -1; }).slice(0,5);
+    var vMatches = vehicles.filter(function(r){
+      return ((r.make||"")+" "+(r.model||"")+" "+(r.plate||"")).toLowerCase().indexOf(q) !== -1;
+    }).slice(0,5);
+    if(!pMatches.length && !vMatches.length){ box.innerHTML = '<div class="hint">No matches.</div>'; return; }
+    var html = "";
+    pMatches.forEach(function(r){
+      var thumb = r.photos && r.photos[0] ? r.photos[0].dataUrl : null;
+      html += '<div class="result-row" data-type="person" data-id="'+r.id+'">' +
+        (thumb ? '<img src="'+thumb+'">' : '<img>') +
+        '<div><div class="rtype">Person</div><div class="rname">'+escapeHtml(r.name)+'</div></div></div>';
+    });
+    vMatches.forEach(function(r){
+      var thumb = r.photos && r.photos[0] ? r.photos[0].dataUrl : null;
+      html += '<div class="result-row" data-type="vehicle" data-id="'+r.id+'">' +
+        (thumb ? '<img src="'+thumb+'">' : '<img>') +
+        '<div><div class="rtype">Vehicle</div><div class="rname">'+escapeHtml((r.make||"")+" "+(r.model||"")+" — "+(r.plate||""))+'</div></div></div>';
+    });
+    box.innerHTML = html;
+    Array.prototype.forEach.call(box.querySelectorAll(".result-row"), function(el){
+      el.onclick = function(){
+        var type = el.getAttribute("data-type"), id = el.getAttribute("data-id");
+        if(type === "person"){ show("peopleScreen"); openPersonDetail(id); }
+        else { show("vehicleScreen"); openVehicleDetail(id); }
+      };
+    });
+  };
+
+  // ---------- recent ----------
+  function renderRecent(){
+    var list = $("recentList");
+    var merged = suspects.map(function(r){ return Object.assign({_type:"person"}, r); })
+      .concat(vehicles.map(function(r){ return Object.assign({_type:"vehicle"}, r); }));
+    merged.sort(function(a,b){ return new Date(b.addedAt) - new Date(a.addedAt); });
+    merged = merged.slice(0, 30);
+    if(!merged.length){ list.innerHTML = '<div class="empty">Nothing added yet.</div>'; return; }
+    var html = "";
+    merged.forEach(function(r){
+      var thumb = r.photos && r.photos[0] ? r.photos[0].dataUrl : null;
+      var label = r._type === "person" ? r.name : ((r.make||"")+" "+(r.model||"")+" — "+(r.plate||""));
+      html += '<div class="result-row" data-type="'+r._type+'" data-id="'+r.id+'">' +
+        (thumb ? '<img src="'+thumb+'">' : '<img>') +
+        '<div><div class="rtype">'+(r._type==="person"?"Person":"Vehicle")+' · '+ new Date(r.addedAt).toLocaleDateString() +'</div>' +
+        '<div class="rname">'+escapeHtml(label)+'</div></div></div>';
+    });
+    list.innerHTML = html;
+    Array.prototype.forEach.call(list.querySelectorAll(".result-row"), function(el){
+      el.onclick = function(){
+        var type = el.getAttribute("data-type"), id = el.getAttribute("data-id");
+        if(type === "person"){ show("peopleScreen"); openPersonDetail(id); }
+        else { show("vehicleScreen"); openVehicleDetail(id); }
+      };
+    });
+  }
+
+  // ---------- shared helpers ----------
+  function fileToCompressedDataUrl(file, maxDim){
+    return new Promise(function(resolve, reject){
+      var img = new Image(); var reader = new FileReader();
+      reader.onload = function(e){
+        img.onload = function(){
+          var w = img.width, h = img.height;
+          var scale = Math.min(1, maxDim / Math.max(w, h));
+          var cw = Math.round(w*scale), ch = Math.round(h*scale);
+          var canvas = document.createElement("canvas");
+          canvas.width = cw; canvas.height = ch;
+          canvas.getContext("2d").drawImage(img, 0, 0, cw, ch);
+          resolve({ dataUrl: canvas.toDataURL("image/jpeg", 0.7), canvas: canvas });
+        };
+        img.onerror = reject; img.src = e.target.result;
+      };
+      reader.onerror = reject; reader.readAsDataURL(file);
+    });
+  }
+  async function reverseGeocode(lat, lng, targetInput, statusEl){
+  try{
+    var url = "https://nominatim.openstreetmap.org/reverse?format=json&lat=" +
+      lat + "&lon=" + lng + "&zoom=18&addressdetails=1";
+
+    var res = await fetch(url, {
+      headers: { "Accept": "application/json" }
+    });
+
+    var data = await res.json();
+    var a = data.address || {};
+
+    var road = a.road || a.pedestrian || a.footway || "";
+    var suburb = a.neighbourhood || a.suburb || "";
+if(/\bward\b/i.test(suburb)) suburb = "";
+
+    var label = [road, suburb].filter(Boolean).join(", ");
+
+    if(label){
+  targetInput.value = label;
+  statusEl.textContent = "Road and suburb captured.";
+}else{
+  targetInput.value = lat.toFixed(6) + ", " + lng.toFixed(6);
+  statusEl.textContent =
+    "No road or suburb found — GPS coordinates saved instead.";
+}
+  }catch(e){
+    statusEl.textContent =
+      "Location captured, but the road-and-suburb lookup failed.";
+  }
+}
+function setupGps(btn, input, statusEl, coordsSetter){
+  btn.onclick = function(){
+    if(!navigator.geolocation){
+      statusEl.textContent = "Location isn't available — enter it manually.";
+      return;
+    }
+
+    statusEl.textContent = "Getting current location…";
+
+    function onSuccess(pos){
+      var c = {
+        lat: pos.coords.latitude,
+        lng: pos.coords.longitude
+      };
+
+      coordsSetter(c);
+      input.value = c.lat.toFixed(6) + ", " + c.lng.toFixed(6);
+      statusEl.textContent = "Location captured — looking up road and suburb…";
+      reverseGeocode(c.lat, c.lng, input, statusEl);
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      onSuccess,
+      function(){
+        statusEl.textContent =
+          "Couldn't get location — enter the road and suburb manually.";
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 20000,
+        maximumAge: 0
+      }
+    );
+  };
+}
+
+  // ================= PEOPLE =================
+  function renderPeopleList(){
+    var q = $("peopleSearch").value.trim().toLowerCase();
+    var filtered = suspects.filter(function(r){ return !q || r.name.toLowerCase().indexOf(q) !== -1; });
+    $("peopleCount").textContent = suspects.length + " on file" + (q ? " · " + filtered.length + " shown" : "");
+    renderPeoplePhotoGallery(filtered);
+    var wrap = $("peopleList");
+    if(!filtered.length){
+      wrap.innerHTML = '<div class="empty">' + (suspects.length===0 ? "No suspects on file yet.<br>Tap “Add suspect” to create the first record." : "No names match your search.") + '</div>';
+      return;
+    }
+    var html = '<div class="grid">';
+    filtered.slice().reverse().forEach(function(r){
+      var thumb = r.photos && r.photos[0] ? r.photos[0].dataUrl : null;
+      html += '<div class="item-card" data-id="'+r.id+'"><div class="thumb" style="'+(thumb?'background-image:url(\''+thumb+'\')':'')+'">'+(thumb?'':'👤')+'</div>' +
+        '<div class="info"><div class="name">'+escapeHtml(r.name)+'</div><div class="meta">'+(r.photos?r.photos.length:0)+' photo'+((r.photos&&r.photos.length===1)?'':'s')+'</div></div></div>';
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+    Array.prototype.forEach.call(wrap.querySelectorAll(".item-card"), function(el){
+      el.onclick = function(){ openPersonDetail(el.getAttribute("data-id")); };
+    });
+  }
+  function renderPeoplePhotoGallery(records){
+  var photos = [];
+
+  records.slice().reverse().forEach(function(record){
+    (record.photos || []).forEach(function(photo){
+      if(photo && photo.dataUrl){
+        photos.push({
+          id: record.id,
+          name: record.name,
+          dataUrl: photo.dataUrl
+        });
+      }
+    });
+  });
+
+  $("peoplePhotoGallery").style.display = photos.length ? "block" : "none";
+
+  $("peoplePhotoCount").textContent =
+    photos.length + " photo" + (photos.length === 1 ? "" : "s");
+
+  $("peoplePhotoRow").innerHTML = photos.map(function(photo){
+    return '<button class="photo-gallery-item" type="button" data-id="' + photo.id + '">' +
+      '<img src="' + photo.dataUrl + '" alt="Photo of ' + escapeHtml(photo.name) + '">' +
+      '<span>' + escapeHtml(photo.name) + '</span>' +
+    '</button>';
+  }).join("");
+
+  Array.prototype.forEach.call(
+    $("peoplePhotoRow").querySelectorAll(".photo-gallery-item"),
+    function(el){
+      el.onclick = function(){
+        openPersonDetail(el.getAttribute("data-id"));
+      };
+    }
+  );
+}
+  $("peopleSearch").oninput = renderPeopleList;
+
+  var pEditingId = null, pPendingPhotos = [], pPendingCoords = null;
+  function openPersonForm(record){
+    pEditingId = record ? record.id : null;
+    $("personFormTitle").textContent = record ? "Edit record" : "Add Person";
+    $("pName").value = record ? record.name : "";
+    $("pDob").value = record ? (record.dob||"") : "";
+    $("pOrigin").value = record ? (record.origin||"") : "";
+    $("pAddress").value = record ? (record.address||"") : "";
+    $("pDeceased").checked = record ? !!record.deceased : false;
+    $("pArrest").value = record ? (record.arrestInfo||"") : "";
+    $("pItems").value = record ? (record.itemsFound||"") : "";
+    $("pProfileLoc").value = record ? (record.profileLoc||"") : "";
+    pPendingCoords = record && record.profileCoords ? record.profileCoords : null;
+    $("pGpsStatus").textContent = "";
+    $("pNotes").value = record ? (record.details||"") : "";
+    pPendingPhotos = record && record.photos ? record.photos.slice() : [];
+    $("pPhotoDate").value = new Date().toISOString().slice(0,10);
+    $("pImageBy").value = "";
+    $("pDeleteBtn").style.display = record ? "block" : "none";
+    renderPPendingPhotos();
+    $("personFormBackdrop").classList.add("open"); $("personFormSheet").classList.add("open");
+    if(!record) $("pUseGpsBtn").onclick();
+  }
+  function closePersonForm(){ $("personFormBackdrop").classList.remove("open"); $("personFormSheet").classList.remove("open"); }
+  $("personFormClose").onclick = closePersonForm; $("personFormBackdrop").onclick = closePersonForm;
+  setupGps($("pUseGpsBtn"), $("pProfileLoc"), $("pGpsStatus"), function(c){ pPendingCoords = c; });
+
+  function renderPPendingPhotos(){
+    var row = $("pPhotosRow"); var html = "";
+    pPendingPhotos.forEach(function(p,i){ html += '<div class="photo-chip"><img src="'+p.dataUrl+'"><button class="rm" data-i="'+i+'">✕</button></div>'; });
+    var addButton = $("pAddPhotoBtn");
+row.innerHTML = html;
+row.appendChild(addButton);
+    Array.prototype.forEach.call(row.querySelectorAll(".rm"), function(btn){
+      btn.onclick = function(){ pPendingPhotos.splice(parseInt(btn.getAttribute("data-i"),10),1); renderPPendingPhotos(); };
+    });
+  }
+  $("pAddPhotoBtn").onclick = function(){ $("pPhotoFile").value=""; $("pPhotoFile").click(); };
+  $("pPhotoFile").onchange = async function(){
+    var file = this.files[0]; if(!file) return;
+    var res = await fileToCompressedDataUrl(file, 480);
+    var descriptor = await computeDescriptor(res.canvas);
+    pPendingPhotos.push({
+    dataUrl: res.dataUrl,
+    descriptor: descriptor,
+    profiledAt: $("pPhotoDate").value,
+    imageBy: $("pImageBy").value.trim()
+});
+    renderPPendingPhotos();
+  };
+  $("pImportFile").onchange = async function(){
+    var files = Array.prototype.slice.call(this.files); if(!files.length) return;
+    for(var i=0;i<files.length;i++){
+      $("pImportStatus").textContent = "Importing photo " + (i+1) + " of " + files.length + "…";
+      try{
+        var res = await fileToCompressedDataUrl(files[i], 480);
+        var descriptor = await computeDescriptor(res.canvas);
+        pPendingPhotos.push({
+    dataUrl: res.dataUrl,
+    descriptor: descriptor,
+    profiledAt: $("pPhotoDate").value,
+    imageBy: $("pImageBy").value.trim()
+});
+        renderPPendingPhotos();
+      }catch(e){ console.error(e); }
+    }
+    $("pImportStatus").textContent = files.length + " photo" + (files.length===1?"":"s") + " imported. Tap “Save record” to keep them.";
+  };
+  $("pSaveBtn").onclick = async function(){
+    var name = $("pName").value.trim();
+    if(!name){ alert("Enter a name."); return; }
+    var fields = {
+      name: name, dob: $("pDob").value.trim(), origin: $("pOrigin").value.trim(),
+      address: $("pAddress").value.trim(), deceased: $("pDeceased").checked, arrestInfo: $("pArrest").value.trim(),
+      itemsFound: $("pItems").value.trim(), profileLoc: $("pProfileLoc").value.trim(),
+      profileCoords: pPendingCoords, details: $("pNotes").value.trim(), photos: pPendingPhotos,
+      addedBy: currentUser ? currentUser.email : "unknown"
+    };
+    $("pSaveBtn").textContent = "Saving…";
+    try{
+      if(pEditingId){ await updateDoc(doc(db,"suspects",pEditingId), fields); }
+      else{ fields.addedAt = new Date().toISOString(); await addDoc(suspectsCol, fields); }
+    }catch(e){ alert("Could not save — check your connection and try again."); $("pSaveBtn").textContent="Save record"; return; }
+    $("pSaveBtn").textContent = "Save record";
+    closePersonForm();
+  };
+  $("pDeleteBtn").onclick = async function(){
+    if(!confirm("Delete this record? This can't be undone.")) return;
+    try{ await deleteDoc(doc(db,"suspects",pEditingId)); }catch(e){ alert("Could not delete — try again."); return; }
+    closePersonForm();
+  };
+  $("addPersonBtn").onclick = function(){ openPersonForm(null); };
+
+  function openPersonDetail(id){
+    var r = suspects.find(function(x){ return x.id===id; }); if(!r) return;
+    var photosHtml = '<div class="detail-photos">' + (r.photos && r.photos.length ? r.photos.map(function(p,i){return '<button class="detail-photo-btn" type="button" data-photo-index="'+i+'"><img src="'+p.dataUrl+'" alt="Photo of '+escapeHtml(r.name)+'"></button>';}).join("") : '<div class="hint">No photos on file.</div>') + '</div>';
+    function field(label,value){ if(!value) return ""; return '<label>'+label+'</label><div class="detail-notes">'+escapeHtml(value)+'</div>'; }
+    var mapLink = r.profileCoords ? ' <a href="https://maps.google.com/?q='+r.profileCoords.lat+','+r.profileCoords.lng+'" target="_blank" style="color:var(--teal);">view on map</a>' : "";
+    $("personDetailBody").innerHTML = photosHtml +
+      '<div class="detail-name">'+escapeHtml(r.name)+'</div>' +
+      '<div class="detail-added">Added '+ new Date(r.addedAt).toLocaleDateString() + (r.addedBy?' by '+escapeHtml(r.addedBy):'') +'</div>' +
+      field("Date of birth / ID number", r.dob) + field("Birth origin", r.origin) + field("Current address / location", r.address) +
+      field("Previous arrest info", r.arrestInfo) + field("Items found on suspect", r.itemsFound) +
+      (r.profileLoc ? '<label>Location of profiling</label><div class="detail-notes">'+escapeHtml(r.profileLoc)+mapLink+'</div>' : "") +
+      field("Additional notes", r.details) +
+      '<button class="primary-btn" id="pEditFromDetail" style="margin-top:16px;">Edit record</button>';
+    Array.prototype.forEach.call(
+  $("personDetailBody").querySelectorAll(".detail-photo-btn"),
+  function(el){
+    el.onclick = function(){
+      var photo = r.photos[parseInt(el.getAttribute("data-photo-index"), 10)];
+      openPhotoLightbox(photo.dataUrl, r.name, photo.profiledAt);
+    };
+  }
+);
+    $("pEditFromDetail").onclick = function(){ closePersonDetail(); openPersonForm(r); };
+    $("personDetailBackdrop").classList.add("open"); $("personDetailSheet").classList.add("open");
+  }
+  function closePersonDetail(){ $("personDetailBackdrop").classList.remove("open"); $("personDetailSheet").classList.remove("open"); }
+  $("personDetailClose").onclick = closePersonDetail; $("personDetailBackdrop").onclick = closePersonDetail;
+
+  // ---------- face matching (People only) ----------
+  async function initHuman(){
+    try{
+      if(typeof Human === "undefined"){ $("scanStatus").textContent = "Matching engine failed to load. Search still works normally."; return; }
+      var config = { modelBasePath: "https://cdn.jsdelivr.net/npm/@vladmandic/human/models/",
+        face: { enabled:true, detector:{rotation:false}, mesh:{enabled:true}, description:{enabled:true}, iris:{enabled:false}, emotion:{enabled:false} },
+        body:{enabled:false}, hand:{enabled:false}, gesture:{enabled:false} };
+      humanInstance = new Human.Human(config);
+      await humanInstance.load();
+      modelsReady = true;
+      $("scanStatus").textContent = "Matching engine ready. Take or choose a photo to compare against your records.";
+    }catch(e){ $("scanStatus").textContent = "Matching engine unavailable in this environment. Search still works normally."; }
+  }
+  async function computeDescriptor(canvasOrImg){
+    if(!modelsReady || !humanInstance) return null;
+    try{
+      var result = await humanInstance.detect(canvasOrImg);
+      if(result && result.face && result.face.length && result.face[0].embedding) return Array.from(result.face[0].embedding);
+      return null;
+    }catch(e){ return null; }
+  }
+  function euclidean(a,b){ if(!a||!b||a.length!==b.length) return Infinity; var s=0; for(var i=0;i<a.length;i++) s+=(a[i]-b[i])*(a[i]-b[i]); return Math.sqrt(s); }
+
+  $("scanBtn").onclick = function(){ $("scanResults").innerHTML=""; $("scanBackdrop").classList.add("open"); $("scanSheet").classList.add("open"); };
+  $("scanClose").onclick = function(){ $("scanBackdrop").classList.remove("open"); $("scanSheet").classList.remove("open"); };
+  $("scanBackdrop").onclick = $("scanClose").onclick;
+  $("scanTakeBtn").onclick = function(){ $("scanFile").value=""; $("scanFile").click(); };
+  $("scanFile").onchange = async function(){
+    var file = this.files[0]; if(!file) return;
+    $("scanResults").innerHTML = '<div class="scan-status">Analyzing…</div>';
+    var res = await fileToCompressedDataUrl(file, 480);
+    var descriptor = await computeDescriptor(res.canvas);
+    if(!descriptor){ $("scanResults").innerHTML = '<div class="scan-status">Could not analyze this photo. Try search instead.</div>'; return; }
+    var scored = [];
+    suspects.forEach(function(r){ (r.photos||[]).forEach(function(p){ if(p.descriptor){ scored.push({record:r, photo:p, dist: euclidean(descriptor, p.descriptor)}); } }); });
+    scored.sort(function(a,b){ return a.dist-b.dist; });
+    var top = scored.slice(0,5);
+    if(!top.length){ $("scanResults").innerHTML = '<div class="scan-status">No stored photos have matchable face data yet.</div>'; return; }
+    var html = "";
+    top.forEach(function(t){
+      var pct = Math.max(0, Math.round((1-t.dist/1.0)*100));
+      html += '<div class="match-row" data-id="'+t.record.id+'"><img src="'+t.photo.dataUrl+'">' +
+        '<div><div class="mname">'+escapeHtml(t.record.name)+'</div><div class="mscore">'+(t.dist<0.6?"Likely match":"Possible match")+' · '+pct+'% similarity</div></div></div>';
+    });
+    $("scanResults").innerHTML = html;
+    Array.prototype.forEach.call($("scanResults").querySelectorAll(".match-row"), function(el){
+      el.onclick = function(){ $("scanClose").onclick(); openPersonDetail(el.getAttribute("data-id")); };
+    });
+  };
+
+  // ================= VEHICLES =================
+  function renderVehicleList(){
+    var q = $("vehicleSearch").value.trim().toLowerCase();
+    var filtered = vehicles.filter(function(r){
+      return !q || ((r.make||"")+" "+(r.model||"")+" "+(r.plate||"")).toLowerCase().indexOf(q) !== -1;
+    });
+    $("vehicleCount").textContent = vehicles.length + " on file" + (q ? " · " + filtered.length + " shown" : "");
+    var wrap = $("vehicleList");
+    if(!filtered.length){
+      wrap.innerHTML = '<div class="empty">' + (vehicles.length===0 ? "No vehicles on file yet.<br>Tap “Add vehicle” to create the first record." : "No vehicles match your search.") + '</div>';
+      return;
+    }
+    var html = '<div class="grid">';
+    filtered.slice().reverse().forEach(function(r){
+      var thumb = r.photos && r.photos[0] ? r.photos[0].dataUrl : null;
+      var label = (r.make||"")+" "+(r.model||"");
+      html += '<div class="item-card" data-id="'+r.id+'"><div class="thumb" style="'+(thumb?'background-image:url(\''+thumb+'\')':'')+'">'+(thumb?'':'🚗')+'</div>' +
+        '<div class="info"><div class="name">'+escapeHtml(label.trim()||"Unknown vehicle")+'</div><div class="meta">'+escapeHtml(r.plate||"No plate on file")+'</div></div></div>';
+    });
+    html += '</div>';
+    wrap.innerHTML = html;
+    Array.prototype.forEach.call(wrap.querySelectorAll(".item-card"), function(el){
+      el.onclick = function(){ openVehicleDetail(el.getAttribute("data-id")); };
+    });
+  }
+  $("vehicleSearch").oninput = renderVehicleList;
+
+  var vEditingId = null, vPendingPhotos = [], vPendingCoords = null;
+  function openVehicleForm(record){
+    vEditingId = record ? record.id : null;
+    $("vehicleFormTitle").textContent = record ? "Edit record" : "Add vehicle";
+    $("vMake").value = record ? (record.make||"") : "";
+    $("vModel").value = record ? (record.model||"") : "";
+    $("vColor").value = record ? (record.color||"") : "";
+    $("vPlate").value = record ? (record.plate||"") : "";
+    $("vOwner").value = record ? (record.owner||"") : "";
+    $("vNotes").value = record ? (record.notes||"") : "";
+    $("vProfileLoc").value = record ? (record.profileLoc||"") : "";
+    vPendingCoords = record && record.profileCoords ? record.profileCoords : null;
+    $("vGpsStatus").textContent = "";
+    vPendingPhotos = record && record.photos ? record.photos.slice() : [];
+    $("vDeleteBtn").style.display = record ? "block" : "none";
+    renderVPendingPhotos();
+    $("vehicleFormBackdrop").classList.add("open"); $("vehicleFormSheet").classList.add("open");
+    if(!record) $("vUseGpsBtn").onclick();
+  }
+  function closeVehicleForm(){ $("vehicleFormBackdrop").classList.remove("open"); $("vehicleFormSheet").classList.remove("open"); }
+  $("vehicleFormClose").onclick = closeVehicleForm; $("vehicleFormBackdrop").onclick = closeVehicleForm;
+  setupGps($("vUseGpsBtn"), $("vProfileLoc"), $("vGpsStatus"), function(c){ vPendingCoords = c; });
+
+  function renderVPendingPhotos(){
+    var row = $("vPhotosRow"); var html = "";
+    vPendingPhotos.forEach(function(p,i){ html += '<div class="photo-chip"><img src="'+p.dataUrl+'"><button class="rm" data-i="'+i+'">✕</button></div>'; });
+    var addButton = $("vAddPhotoBtn");
+row.innerHTML = html;
+row.appendChild(addButton);
+    Array.prototype.forEach.call(row.querySelectorAll(".rm"), function(btn){
+      btn.onclick = function(){ vPendingPhotos.splice(parseInt(btn.getAttribute("data-i"),10),1); renderVPendingPhotos(); };
+    });
+  }
+  $("vAddPhotoBtn").onclick = function(){
+    $("vImportFile").value="";
+    $("vImportFile").click();
+};
+  var plateOcrWorker = null;
+
+async function scanVehiclePlate(file){
+
+    var status = $("vPlateScanStatus");
+
+    try{
+
+        status.textContent = "Preparing plate scanner…";
+
+        if(!plateOcrWorker){
+
+            plateOcrWorker = await Tesseract.createWorker("eng");
+
+            await plateOcrWorker.setParameters({
+                tessedit_pageseg_mode: "7",
+                tessedit_char_whitelist:
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
+            });
+
+        }
+
+        status.textContent = "Reading number plate…";
+
+        var result = await plateOcrWorker.recognize(file);
+
+        var rawText = (result.data.text || "")
+            .toUpperCase()
+            .replace(/[^A-Z0-9\- ]/g," ")
+            .replace(/\s+/g," ")
+            .trim();
+
+        if(!rawText){
+
+            status.textContent =
+                "No plate text could be detected. Enter it manually.";
+
+            return;
+        }
+
+        $("vPlate").value = rawText;
+
+status.innerHTML =
+    "<strong>Detected:</strong> " + rawText +
+    "<br>Please check the registration above before saving.";
+
+    }catch(e){
+
+        console.error("Plate OCR failed:", e);
+
+        status.textContent =
+            "Plate scan failed. Enter the registration manually.";
+
+    }
+
+}
+
+$("vScanPlateBtn").onclick = function(){
+
+    $("vPlateScanFile").value = "";
+    $("vPlateScanFile").click();
+
+};
+
+$("vPlateScanFile").onchange = async function(){
+
+    var file = this.files[0];
+
+    if(!file) return;
+
+    await scanVehiclePlate(file);
+
+};
+  $("vPhotoFile").onchange = async function(){
+    var file = this.files[0]; if(!file) return;
+    var res = await fileToCompressedDataUrl(file, 480);
+    vPendingPhotos.push({ dataUrl: res.dataUrl });
+    renderVPendingPhotos();
+  };
+  $("vImportFile").onchange = async function(){
+    var files = Array.prototype.slice.call(this.files); if(!files.length) return;
+    for(var i=0;i<files.length;i++){
+      $("vImportStatus").textContent = "Importing photo " + (i+1) + " of " + files.length + "…";
+      try{ var res = await fileToCompressedDataUrl(files[i], 480); vPendingPhotos.push({ dataUrl: res.dataUrl }); renderVPendingPhotos(); }
+      catch(e){ console.error(e); }
+    }
+    $("vImportStatus").textContent = files.length + " photo" + (files.length===1?"":"s") + " imported. Tap “Save record” to keep them.";
+  };
+  $("vSaveBtn").onclick = async function(){
+    var make = $("vMake").value.trim(), model = $("vModel").value.trim(), plate = $("vPlate").value.trim();
+    if(!make && !model && !plate){ alert("Enter at least a make, model, or plate."); return; }
+    var fields = {
+      make: make, model: model, color: $("vColor").value.trim(), plate: plate,
+      owner: $("vOwner").value.trim(), notes: $("vNotes").value.trim(),
+      profileLoc: $("vProfileLoc").value.trim(), profileCoords: vPendingCoords, photos: vPendingPhotos,
+      addedBy: currentUser ? currentUser.email : "unknown"
+    };
+    $("vSaveBtn").textContent = "Saving…";
+    try{
+      if(vEditingId){ await updateDoc(doc(db,"vehicles",vEditingId), fields); }
+      else{ fields.addedAt = new Date().toISOString(); await addDoc(vehiclesCol, fields); }
+    }catch(e){ alert("Could not save — check your connection and try again."); $("vSaveBtn").textContent="Save record"; return; }
+    $("vSaveBtn").textContent = "Save record";
+    closeVehicleForm();
+  };
+  $("vDeleteBtn").onclick = async function(){
+    if(!confirm("Delete this record? This can't be undone.")) return;
+    try{ await deleteDoc(doc(db,"vehicles",vEditingId)); }catch(e){ alert("Could not delete — try again."); return; }
+    closeVehicleForm();
+  };
+  $("addVehicleBtn").onclick = function(){ openVehicleForm(null); };
+
+  function openVehicleDetail(id){
+    var r = vehicles.find(function(x){ return x.id===id; }); if(!r) return;
+   var photosHtml = '<div class="detail-photos">' +
+  (r.photos && r.photos.length
+    ? r.photos.map(function(p, i){
+        return '<button class="detail-photo-btn" type="button" data-photo-index="' + i + '">' +
+          '<img src="' + p.dataUrl + '" alt="Photo of ' + escapeHtml(r.name) + '">' +
+        '</button>';
+      }).join("")
+    : '<div class="hint">No photos on file.</div>') +
+  '</div>';
+    function field(label,value){ if(!value) return ""; return '<label>'+label+'</label><div class="detail-notes">'+escapeHtml(value)+'</div>'; }
+    var mapLink = r.profileCoords ? ' <a href="https://maps.google.com/?q='+r.profileCoords.lat+','+r.profileCoords.lng+'" target="_blank" style="color:var(--teal);">view on map</a>' : "";
+    var title = ((r.make||"")+" "+(r.model||"")).trim() || "Unknown vehicle";
+    $("vehicleDetailBody").innerHTML = photosHtml +
+      '<div class="detail-name">'+escapeHtml(title)+'</div>' +
+      '<div class="detail-added">Added '+ new Date(r.addedAt).toLocaleDateString() + (r.addedBy?' by '+escapeHtml(r.addedBy):'') +'</div>' +
+      field("Colour", r.color) + field("Registration / plate", r.plate) + field("Owner / driver", r.owner) +
+      (r.profileLoc ? '<label>Location of profiling</label><div class="detail-notes">'+escapeHtml(r.profileLoc)+mapLink+'</div>' : "") +
+      field("Notes", r.notes) +
+      '<button class="primary-btn" id="vEditFromDetail" style="margin-top:16px;">Edit record</button>';
+    $("vEditFromDetail").onclick = function(){ closeVehicleDetail(); openVehicleForm(r); };
+    $("vehicleDetailBackdrop").classList.add("open"); $("vehicleDetailSheet").classList.add("open");
+  }
+  function closeVehicleDetail(){ $("vehicleDetailBackdrop").classList.remove("open"); $("vehicleDetailSheet").classList.remove("open"); }
+  $("vehicleDetailClose").onclick = closeVehicleDetail; $("vehicleDetailBackdrop").onclick = closeVehicleDetail;
+
+})();
+</script>
+  <div class="internal-footer">Internal use only</div>
+</body>
+</html>

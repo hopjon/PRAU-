@@ -1593,40 +1593,7 @@ async function scanVehiclePlate(file){
     }
 
 }
-        status.textContent = "Reading number plate…";
-
-        var result = await plateOcrWorker.recognize(file);
-
-        var rawText = (result.data.text || "")
-            .toUpperCase()
-            .replace(/[^A-Z0-9\- ]/g," ")
-            .replace(/\s+/g," ")
-            .trim();
-
-        if(!rawText){
-
-            status.textContent =
-                "No plate text could be detected. Enter it manually.";
-
-            return;
-        }
-
-        $("vPlate").value = rawText;
-
-status.innerHTML =
-    "<strong>Detected:</strong> " + rawText +
-    "<br>Please check the registration above before saving.";
-
-    }catch(e){
-
-        console.error("Plate OCR failed:", e);
-
-        status.textContent =
-            "Plate scan failed. Enter the registration manually.";
-
-    }
-
-}
+       
 
 $("vScanPlateBtn").onclick = function(){
 

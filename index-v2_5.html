@@ -402,6 +402,14 @@
     <input type="text" id="vColor" placeholder="e.g. White">
     <label>Registration / plate number</label>
     <input type="text" id="vPlate" placeholder="e.g. CA 123-456">
+    <button type="button" class="ghost-btn" id="vScanPlateBtn" style="margin-top:8px;">
+    <i class="fa-solid fa-camera"></i>
+    Scan plate from photo
+</button>
+
+<div class="hint" id="vPlateScanStatus" style="text-align:left;margin-top:8px;"></div>
+
+<input type="file" id="vPlateScanFile" accept="image/*" capture="environment">
     <label>Owner / driver</label>
     <input type="text" id="vOwner" placeholder="Name, or link to a suspect record">
     <label>Notes</label>
@@ -452,6 +460,7 @@
   
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/human/3.3.6/human.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
@@ -1299,6 +1308,79 @@ row.appendChild(addButton);
     });
   }
   $("vAddPhotoBtn").onclick = function(){ $("vPhotoFile").value=""; $("vPhotoFile").click(); };
+  var plateOcrWorker = null;
+
+async function scanVehiclePlate(file){
+
+    var status = $("vPlateScanStatus");
+
+    try{
+
+        status.textContent = "Preparing plate scanner…";
+
+        if(!plateOcrWorker){
+
+            plateOcrWorker = await Tesseract.createWorker("eng");
+
+            await plateOcrWorker.setParameters({
+                tessedit_pageseg_mode: "7",
+                tessedit_char_whitelist:
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789- "
+            });
+
+        }
+
+        status.textContent = "Reading number plate…";
+
+        var result = await plateOcrWorker.recognize(file);
+
+        var rawText = (result.data.text || "")
+            .toUpperCase()
+            .replace(/[^A-Z0-9\- ]/g," ")
+            .replace(/\s+/g," ")
+            .trim();
+
+        if(!rawText){
+
+            status.textContent =
+                "No plate text could be detected. Enter it manually.";
+
+            return;
+        }
+
+        $("vPlate").value = rawText;
+
+status.innerHTML =
+    "<strong>Detected:</strong> " + rawText +
+    "<br>Please check the registration above before saving.";
+
+    }catch(e){
+
+        console.error("Plate OCR failed:", e);
+
+        status.textContent =
+            "Plate scan failed. Enter the registration manually.";
+
+    }
+
+}
+
+$("vScanPlateBtn").onclick = function(){
+
+    $("vPlateScanFile").value = "";
+    $("vPlateScanFile").click();
+
+};
+
+$("vPlateScanFile").onchange = async function(){
+
+    var file = this.files[0];
+
+    if(!file) return;
+
+    await scanVehiclePlate(file);
+
+};
   $("vPhotoFile").onchange = async function(){
     var file = this.files[0]; if(!file) return;
     var res = await fileToCompressedDataUrl(file, 480);

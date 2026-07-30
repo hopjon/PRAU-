@@ -764,7 +764,7 @@ row.appendChild(addButton);
 
   function openPersonDetail(id){
     var r = suspects.find(function(x){ return x.id===id; }); if(!r) return;
-    var photosHtml = '<div class="detail-photos">' + (r.photos && r.photos.length ? r.photos.map(function(p){return '<img src="'+p.dataUrl+'">';}).join("") : '<div class="hint">No photos on file.</div>') + '</div>';
+    var photosHtml = '<div class="detail-photos">' + (r.photos && r.photos.length ? r.photos.map(function(p,i){return '<button class="detail-photo-btn" type="button" data-photo-index="'+i+'"><img src="'+p.dataUrl+'" alt="Photo of '+escapeHtml(r.name)+'"></button>';}).join("") : '<div class="hint">No photos on file.</div>') + '</div>';
     function field(label,value){ if(!value) return ""; return '<label>'+label+'</label><div class="detail-notes">'+escapeHtml(value)+'</div>'; }
     var mapLink = r.profileCoords ? ' <a href="https://maps.google.com/?q='+r.profileCoords.lat+','+r.profileCoords.lng+'" target="_blank" style="color:var(--teal);">view on map</a>' : "";
     $("personDetailBody").innerHTML = photosHtml +

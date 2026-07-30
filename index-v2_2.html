@@ -294,8 +294,11 @@
     <div class="hint" id="pGpsStatus" style="text-align:left;margin-top:6px;"></div>
     <label>Additional notes</label>
     <textarea id="pNotes" placeholder="Anything else worth recording"></textarea>
-    <label>Photos</label>
-    <div class="photos-row" id="pPhotosRow"><button class="addphoto" id="pAddPhotoBtn">＋</button></div>
+<label>Photo / profiling date</label>
+<input type="date" id="pPhotoDate">
+
+<label>Photos</label>
+<div class="photos-row" id="pPhotosRow"><button class="addphoto" id="pAddPhotoBtn">＋</button></div>
     <div style="display:flex;gap:8px;margin-top:8px;">
       <label class="fab ghost" for="pImportFile" style="flex:1;justify-content:center;margin:0;">🖼 Import from gallery</label>
     </div>
@@ -416,10 +419,20 @@ const vehiclesCol = collection(db, "vehicles");
     });
   }
   function $(id){ return document.getElementById(id); }
- function openPhotoLightbox(src, name){
+ function openPhotoLightbox(src, name, profiledAt){
+  var dateText = "";
+
+  if(profiledAt){
+    dateText = " · Profiled: " +
+      new Date(profiledAt + "T00:00:00").toLocaleDateString(
+        "en-ZA",
+        { day:"numeric", month:"long", year:"numeric" }
+      );
+  }
+
   $("photoLightboxImage").src = src;
   $("photoLightboxImage").alt = name ? "Photo of " + name : "Full-size photo";
-  $("photoLightboxCaption").textContent = name || "";
+  $("photoLightboxCaption").textContent = (name || "") + dateText;
   $("photoLightbox").classList.add("open");
 }
 
@@ -710,6 +723,7 @@ function setupGps(btn, input, statusEl, coordsSetter){
     $("pGpsStatus").textContent = "";
     $("pNotes").value = record ? (record.details||"") : "";
     pPendingPhotos = record && record.photos ? record.photos.slice() : [];
+    $("pPhotoDate").value = new Date().toISOString().slice(0,10);
     $("pDeleteBtn").style.display = record ? "block" : "none";
     renderPPendingPhotos();
     $("personFormBackdrop").classList.add("open"); $("personFormSheet").classList.add("open");
@@ -734,7 +748,11 @@ row.appendChild(addButton);
     var file = this.files[0]; if(!file) return;
     var res = await fileToCompressedDataUrl(file, 480);
     var descriptor = await computeDescriptor(res.canvas);
-    pPendingPhotos.push({ dataUrl: res.dataUrl, descriptor: descriptor });
+    pPendingPhotos.push({
+  dataUrl: res.dataUrl,
+  descriptor: descriptor,
+  profiledAt: $("pPhotoDate").value
+});
     renderPPendingPhotos();
   };
   $("pImportFile").onchange = async function(){
@@ -744,7 +762,11 @@ row.appendChild(addButton);
       try{
         var res = await fileToCompressedDataUrl(files[i], 480);
         var descriptor = await computeDescriptor(res.canvas);
-        pPendingPhotos.push({ dataUrl: res.dataUrl, descriptor: descriptor });
+        pPendingPhotos.push({
+  dataUrl: res.dataUrl,
+  descriptor: descriptor,
+  profiledAt: $("pPhotoDate").value
+});
         renderPPendingPhotos();
       }catch(e){ console.error(e); }
     }
@@ -793,7 +815,7 @@ row.appendChild(addButton);
   function(el){
     el.onclick = function(){
       var photo = r.photos[parseInt(el.getAttribute("data-photo-index"), 10)];
-      openPhotoLightbox(photo.dataUrl, r.name);
+      openPhotoLightbox(photo.dataUrl, r.name, photo.profiledAt);
     };
   }
 );

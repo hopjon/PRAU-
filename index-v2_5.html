@@ -1307,7 +1307,10 @@ row.appendChild(addButton);
       btn.onclick = function(){ vPendingPhotos.splice(parseInt(btn.getAttribute("data-i"),10),1); renderVPendingPhotos(); };
     });
   }
-  $("vAddPhotoBtn").onclick = function(){ $("vPhotoFile").value=""; $("vPhotoFile").click(); };
+  $("vAddPhotoBtn").onclick = function(){
+    $("vImportFile").value="";
+    $("vImportFile").click();
+};
   var plateOcrWorker = null;
 
 async function scanVehiclePlate(file){

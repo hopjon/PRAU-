@@ -382,7 +382,8 @@
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
 import {
-  initializeFirestore, collection, doc, addDoc, updateDoc, deleteDoc, setDoc,
+  initializeFirestore, collection, doc, addDoc, updateDoc, deleteDoc,
+  onSnapshot, setDoc, query, orderBy
 } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 import {
   getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut
